@@ -1,6 +1,7 @@
 module IL
 	open FStar.Set
 	open FStar.Heap
+    open FStar.Map
 
 // Old module Source
 //-----------------------------------------------------------------------------------------------------------------
@@ -149,7 +150,7 @@ module IL
 //-----------------------------------------------------------------------------------------------------------------
     type Module 'patt 'expr = {
         (*  Module is a list of rules                                                                   *)
-        rules : list (Rule 'patt'expr);
+        rules : list (Rule 'patt 'expr);
         openings : list Source;
         name : option Source;
         (*  Are all rules public (can be seen form another module), except explicitly marked as private.*)
@@ -174,8 +175,8 @@ module IL
         grammar : Grammar 'patt 'expr;
         (*  Text after a grammar description, what will be simply copied                                    *)
         foot    : option 'expr;
-        options : Map string string;
-        tokens : Map string (option string)
+        (*options : Map string string;*)
+        (*tokens : Map string (option string)*)
     }    
     
     (*  Empty grammar                                                                                       *)
@@ -184,6 +185,6 @@ module IL
         head = None; 
         foot = None; 
         grammar = []; 
-        options = Map.empty; 
-        tokens = Map.empty
+        (*options = Map.empty; *)
+        (*tokens = Map.empty*)
     }
