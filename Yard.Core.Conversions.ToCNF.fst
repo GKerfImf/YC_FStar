@@ -1,53 +1,91 @@
 module Yard.Core.Conversions.ToCNF
 	open IL
-	open Yard.Core //.Namer
-
+	open Yard.Core
 
 //--Разделение длинных правил на правила длины 2 и 1 ------------------------------------------------------------------------
 
-	let splitLongRule rules =    
-
+	// ~> splitLongRule: ruleList: list (Rule 'patt 'expr) -> Tot (list (Rule 'patt 'expr))
+	// val splitLongRule: ruleList: list (Rule 'patt 'expr) -> list (Rule 'patt 'expr) 			// 0001: not ok
+	val splitLongRule: ruleList: list (Rule 'a 'b) -> list (Rule 'a 'b) 						// ok
+	let splitLongRule (ruleList: list (Rule _ _)) =    
 	    let newRuleList = ref [] in
-
 	    let rec cutRule (rule: Rule _ _) = 
 
+	    	// 0002: ??
+	    	//val elements: (Rule 'a 'b) -> Tot (list (elem 'a 'b))
 	        let elements = match rule.body with PSeq(e, a, l) -> e | _ -> [] in
 
 	        if List.length elements > 2 then
 	            let revEls = elements |> List.rev in
 	            let ruleBody = PSeq([revEls |> List.hd; revEls |> List.tl |> List.hd], None, None) in
-	            let newRule = TransformAux.createRule (Namer.newSource(rule.name)) rule.args ruleBody false rule.metaArgs in     
+
+	            // 0003: Fix TransformAux.createRule
+	            let newRule = TransformAux.createRule (Namer.newSource(rule.name)) rule.args ruleBody false rule.metaArgs in 
+
+	            // 0004: TransformAux.createDefaultElem    
 	            let newElem = TransformAux.createDefaultElem (PRef(newRule.name, None)) in
+
 	            let changedRule = (revEls |> List.tl |> List.tl |> List.rev) @ [newElem] in
 
-				//newRuleList := !newRuleList @ [newRule]
-
+				newRuleList := !newRuleList @ [newRule];
+ 
                 cutRule ({ rule with body = 
 	            				PSeq(
 	            					changedRule, 
 	            					(match rule.body with PSeq(e, a, l) -> a | _ -> None),
 	            					(match rule.body with PSeq(e, a, l) -> l | _ -> None)) })
-
-	        else [rule]
+	        else 
+	        	[rule]
 	    in
-	    (rules |> List.collect (fun rule -> cutRule rule)) @ !newRuleList
+	    (ruleList |> List.collect (fun rule -> cutRule rule)) @ !newRuleList
 
 
-	let deleteTrashRule rulesList = 
-    	let trashFilter rule =  
-    		let elements = match rule.body with PSeq(e, _, _) -> e | _ -> [] in
-        		if List.length elements = 1 then 
-                	match (List.hd elements).rule with
-                	| PRef (e,_) -> rule.name.text = e.text |> not  //rule.name.text.Equals(e.text) |> not
-                	| _ -> true
-            	else true
-        in
-		rulesList |> List.filter(fun rule -> trashFilter rule)
+
+	val length_body: Rule 'a 'b -> Tot nat
+	let length_body rule =
+		match rule.body with 
+		|PSeq(e, a, l) -> List.length e 
+		| _ -> 0
+
+	assume val short_right_rules_lemma : 
+		r: list (Rule 'a 'b) ->
+			Lemma 
+				(ensures 
+					List.Tot.for_all (fun x -> x<=2) (List.Tot.map length_body (r)) 
+					//  				+
+					//		    splitLongRule is Tot
+					//                  =
+					//for_all (fun x -> x<=2) (map length_body (splitLongRule r)) 
+				)
 
 
+	//0000: Ok
+	//assume val short_right_rules_lemma1 : 
+	//	r:RuleList ->
+	//		Lemma 
+	//			(ensures 
+	//				((fun x -> true) r)
+	//			)
+
+	//0000: Not ok
+	//assume val short_right_rules_lemma2 : 
+	//	r:RuleList ->
+	//		Lemma 
+	//			(ensures 
+	//				(r |> (fun x -> true))
+	//			)
+
+(*
 //Код ниже ещё не должен работать
 //--Функция для удаления эпсилон-правил------------------------------------------------------------
-(*
+
+	(*
+	incr ~~>
+	let new_counter init =
+  		let c = Util.mk_ref init in
+  		fun () -> c := c + 1; !c
+	*)
+
 	let deleteEpsRule (ruleList: list (Rule _ _)) =
 	    let rec listfromto a b =
 	        match b-a+1 with
@@ -130,7 +168,7 @@ module Yard.Core.Conversions.ToCNF
 	                            | PRef(t,_) when epsWithNameExists t.text -> []
 	                            // System.Int32.TryParse :( 
 	                        	//| PRef(t,_) when (System.Int32.TryParse t.text |> fst && not <| epsWithNameExists t.text) -> 
-	                                    //  [TransformAux.createSimpleElem (PRef(Source.t(epsRef.[int t.text - 1]), None)) elem.binding]
+	                                    //  [TransformAux.createSimpleElem (PRef(new_Source0(epsRef.[int t.text - 1]), None)) elem.binding]
 	                                    //   ||
 	                                    //   \/
 	                                    [elem] //del
@@ -138,9 +176,18 @@ module Yard.Core.Conversions.ToCNF
 	                [{numberRule with body=PSeq(newBody, ac, lbl)}] in
 	            let numberRule = {rule with body=numberBody} in
 	            numberEpsRef |> List.collect (addRule numberRule) 
-	        else 
-	        	[] 
+	        else [] 
 	    in
+
+	    let deleteTrashRule rulesList = 
+	    	let trashFilter rule =  
+	    		let elements = match rule.body with PSeq(e, _, _) -> e | _ -> [] in
+	        		if List.length elements = 1 then 
+	                	match (List.hd elements).rule with
+	                	| PRef (e,_) -> rule.name.text = e.text |> not  //rule.name.text.Equals(e.text) |> not
+	                	| _ -> true
+	            	else true in
+			rulesList |> List.filter(fun rule -> trashFilter rule) in
 	            
 	    //Добавляем новые правила
 	    ruleList |> List.collect
@@ -151,7 +198,7 @@ module Yard.Core.Conversions.ToCNF
 	        )
 	    |> List.filter (fun r -> match r.body with PSeq([],_,_) -> true | _ -> false |> not) |> deleteTrashRule
 *)
-
+(*
 //--Функция для удаления цепных правил--------------------------------------------------------------------------------------------      
 	let deleteChainRule (ruleList: list (Rule _ _)) = 
 	    
@@ -217,11 +264,12 @@ module Yard.Core.Conversions.ToCNF
 	    let renameRule (rule: Rule _ _) = 
 	        let rename (elem: elem _ _) = 
 	            if isToken elem then 
-	                let newRuleName = Source.t("new_" + (match elem.rule with PToken t -> t.text | _ -> "")) in 
+	                let newRuleName = new_Source0("new_" + (match elem.rule with PToken t -> t.text | _ -> "")) in 
 	                if (not (!newRuleList |> List.existsb (fun rl -> rl.name = newRuleName))) then //где else ??
 	                    let newRule = TransformAux.createRule newRuleName rule.args (PSeq([elem], None, None)) false rule.metaArgs in 
-	                    newRuleList := !newRuleList @ [newRule]
+	                    newRuleList := !newRuleList @ [newRule];
 	                TransformAux.createSimpleElem (PRef(newRuleName, None)) elem.binding //новый элемент
+	                elem
 	            else elem in
 
 	        let elements = match rule.body with PSeq(e, a, l) -> e | x -> [] in
@@ -234,9 +282,29 @@ module Yard.Core.Conversions.ToCNF
 	    (ruleList |> List.collect (fun rule -> if isCNF rule then [rule] else renameRule rule)) @ !newRuleList
 
 //--CNF--------------------------------------------------------------------------------------------------------
+
+*)
+
+(*
 	let toCNF (ruleList: list (Rule _ _)) = 
 	    ruleList
 	    |> splitLongRule
 	    |> deleteEpsRule 
 	    |> deleteChainRule
-	    |> renameTerm
+	    |> renameTerm 
+*)
+
+
+//main lemma sketch
+
+assume val grammar_eq : g1:Grammar 'a 'b -> g2:Grammar 'a 'b -> Tot bool
+
+assume val isCFG:  g:Grammar 'a 'b -> Tot bool
+assume val isCNF:  g:Grammar 'a 'b -> Tot bool
+assume val toCNF:  g:Grammar 'a 'b -> Tot (Grammar 'a 'b)
+
+assume val main_lemma: 
+	g: Grammar 'a 'b -> 
+		Lemma 
+			(requires (isCFG g)) 
+			(ensures ( isCNF (toCNF g) /\ grammar_eq (toCNF g) (g) ))

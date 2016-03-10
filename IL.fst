@@ -145,14 +145,14 @@ module IL
     }
 //-----------------------------------------------------------------------------------------------------------------
 
-(*
+
 // Grammar
 //-----------------------------------------------------------------------------------------------------------------
     type Module 'patt 'expr = {
         (*  Module is a list of rules                                                                   *)
         rules : list (Rule 'patt 'expr);
         openings : list Source;
-        name : option Source;
+        name2 : option Source;              //name
         (*  Are all rules public (can be seen form another module), except explicitly marked as private.*)
         (*  Otherwise rule must be directly marked as public to be seen.                                *)
         allPublic : bool
@@ -188,4 +188,3 @@ module IL
         (*options = Map.empty; *)
         (*tokens = Map.empty*)
     }
-*)

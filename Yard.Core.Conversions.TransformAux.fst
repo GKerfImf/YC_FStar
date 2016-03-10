@@ -1,7 +1,5 @@
 module Yard.Core.Conversions.TransformAux
     open IL
-    open IL.MkModule
-    
     (*let getText = Source.toString
 
     let rec getTextIL = function
@@ -25,7 +23,6 @@ module Yard.Core.Conversions.TransformAux
         { omit = false; rule = rulProd; binding = bind; checker = None }
 
     let createDefaultElem rulProd = createSimpleElem rulProd None
-
 
     let createRule name args body _public mArgs = 
         { 
