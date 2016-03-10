@@ -2,7 +2,7 @@ module Yard.Core.Namer
     open IL
 
 (*    (** prefix for all items created by Yard *)
-    let withPrefix s = "yard_" + s
+    //let withPrefix s = "yard_" + s
 
     (** global variable for number of current generated rule *)
     let curNum = ref 0
@@ -91,29 +91,43 @@ module Yard.Core.Namer
         )
 *)
 
-(*
-    let newName (n : string) =
+    //-- Слишком сложно
+(*  let newName (n : string) =
         let addPrefix = 
             try
-                let yardPrefix = withPrefix ""
-                if n.Substring (0, min n.Length yardPrefix.Length) = yardPrefix 
+                let yardPrefix = withPrefix "" in 
+                if n.substring (0, min n.length yardPrefix.length) = yardPrefix 
                 then n
                 else withPrefix n
             with (*Invalid_argument*) _ -> withPrefix n
-        incr curNum
-        let res = ref <| sprintf "%s_%d" addPrefix !curNum
-        while usedNames.Contains !res do
+        curNum := !curNum + 1;
+        let res = 
+            ref <| sprintf "%s_%d" addPrefix !curNum in
+        while usedNames.contains !res do
             incr curNum
             res := sprintf "%s_%d" addPrefix !curNum
-        usedNames.Add !res |> ignore
+        usedNames.add !res |> ignore
         !res
-
-
-    let newSource (old : Source.t) = new Source.t(newName old.text, old)
 *)
+
+    
+    //STATE
+    let nameList = ref []
+
+    //TODO: нужен ли init 
+    // let init Rules = 
+    // nameList <- Rules.PSeq.e
+
+    val prodNewName: string -> string
+    let rec prodNewName (name : string) =
+        let newName = name ^ "c" in
+        match List.Tot.find (fun x -> x = newName) !nameList  with
+        | Some _    -> prodNewName newName
+        | None      -> nameList := !nameList @ [newName]; newName
+
+    //val newSource: Source -> Tot Source
     let newSource (old : Source) = 
-        let t = {old with text = old.text} in
-        t
+        ({ old with text = prodNewName old.text})
 
 (*
     let genNewSourceWithRange (name : string) (body : t<_,_>) =

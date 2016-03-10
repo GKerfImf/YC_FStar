@@ -29,8 +29,9 @@ module IL
 	let new_position2 (fslexPos : Lexing_Position) =
 			{absoluteOffset = fslexPos.absoluteOffset; line = fslexPos.line; column = fslexPos.column} 
 
+    // TODO: --Нужен ли ref ?
 	type Source = {
-		text : ref string;
+		text : string;
 		startPos : ref Position;
 		endPos : ref Position;
 		file : ref string

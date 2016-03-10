@@ -23,6 +23,7 @@ fs: out Main.fst
 	cp $(FS_LIBS) out
 	$(FSC) -o out/Main.exe $(LIB)/fs/prims.fs $(LIB)/fs/io.fs out/Main.fs
 	$(FSRUNTIME) ./out/Main.exe
+	
 
 out:
 	mkdir -p out
