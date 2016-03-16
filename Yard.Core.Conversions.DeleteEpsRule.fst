@@ -112,7 +112,8 @@ module Yard.Core.Conversions.DeleteEpsRule
         ruleList |> List.collect
             (fun rule ->
                 match rule.body with
-                //| PSeq(elements, actionCode, lbl) when (elements |> List.isEmpty |> not) -> newRule rule (epsInRule elements) @ [rule]
+                | PSeq(elements, actionCode, lbl) 
+                    (*when (elements |> List.isEmpty |> not)*) -> newRule rule (epsInRule elements) @ [rule]
                 | PSeq(elements, actionCode, lbl) -> newRule rule (epsInRule elements) @ [rule]
                 | _ -> []
             )
