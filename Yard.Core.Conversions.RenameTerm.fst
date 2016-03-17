@@ -21,6 +21,7 @@ module Yard.Core.Conversions.RenameTerm
 
 
 //assume val instanceOf: a:Type -> Tot a
+
  
     assume val toTerminalRule: 
         x:(Rule 'a 'b){

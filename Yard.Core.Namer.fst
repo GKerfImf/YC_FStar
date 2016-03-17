@@ -111,23 +111,24 @@ module Yard.Core.Namer
 *)
 
     
-    //STATE
-    let nameList = ref []
+    val prodNewName: int -> string -> Tot string
+    let prodNewName n name = name ^ (string_of_int n)
 
-    //TODO: нужен ли init 
-    // let init Rules = 
-    // nameList <- Rules.PSeq.e
+    val newSource: n:int -> oldSource:Source -> Tot Source 
+    let newSource n old = 
+        ({ old with text = prodNewName n old.text})
 
-    val prodNewName: string -> string
-    let rec prodNewName (name : string) =
-        let newName = name ^ "c" in
-        match List.Tot.find (fun x -> x = newName) !nameList  with
-        | Some _    -> prodNewName newName
-        | None      -> nameList := !nameList @ [newName]; newName
 
-    //val newSource: Source -> Tot Source
-    let newSource (old : Source) = 
-        ({ old with text = prodNewName old.text})
+    assume val newSourceLemma:  
+        n:int -> source:Source ->  
+        Lemma (source <> newSource n source)
+
+    assume val injectiveNewSource: 
+        source1:Source -> source2:Source ->
+        Lemma   (requires (source1 <> source2))
+                (ensures (forall n m. (newSource n source1 <> newSource m source2)))
+
+
 
 (*
     let genNewSourceWithRange (name : string) (body : t<_,_>) =
