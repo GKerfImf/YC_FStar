@@ -2,7 +2,7 @@ module Yard.Core.Namer
     open IL
 
 (*    (** prefix for all items created by Yard *)
-    let withPrefix s = "yard_" + s
+    //let withPrefix s = "yard_" + s
 
     (** global variable for number of current generated rule *)
     let curNum = ref 0
@@ -91,29 +91,44 @@ module Yard.Core.Namer
         )
 *)
 
-(*
-    let newName (n : string) =
+    //-- Слишком сложно
+(*  let newName (n : string) =
         let addPrefix = 
             try
-                let yardPrefix = withPrefix ""
-                if n.Substring (0, min n.Length yardPrefix.Length) = yardPrefix 
+                let yardPrefix = withPrefix "" in 
+                if n.substring (0, min n.length yardPrefix.length) = yardPrefix 
                 then n
                 else withPrefix n
             with (*Invalid_argument*) _ -> withPrefix n
-        incr curNum
-        let res = ref <| sprintf "%s_%d" addPrefix !curNum
-        while usedNames.Contains !res do
+        curNum := !curNum + 1;
+        let res = 
+            ref <| sprintf "%s_%d" addPrefix !curNum in
+        while usedNames.contains !res do
             incr curNum
             res := sprintf "%s_%d" addPrefix !curNum
-        usedNames.Add !res |> ignore
+        usedNames.add !res |> ignore
         !res
-
-
-    let newSource (old : Source.t) = new Source.t(newName old.text, old)
 *)
-    let newSource (old : Source) = 
-        let t = {old with text = old.text} in
-        t
+
+    
+    val prodNewName: int -> string -> Tot string
+    let prodNewName n name = name ^ (string_of_int n)
+
+    val newSource: n:int -> oldSource:Source -> Tot Source 
+    let newSource n old = 
+        ({ old with text = prodNewName n old.text})
+
+
+    assume val newSourceLemma:  
+        n:int -> source:Source ->  
+        Lemma (source <> newSource n source)
+
+    assume val injectiveNewSource: 
+        source1:Source -> source2:Source ->
+        Lemma   (requires (source1 <> source2))
+                (ensures (forall n m. (newSource n source1 <> newSource m source2)))
+
+
 
 (*
     let genNewSourceWithRange (name : string) (body : t<_,_>) =

@@ -1,4 +1,14 @@
-VERFILES=IL.fst Yard.Core.Namer.fst Yard.Core.Conversions.TransformAux.fst Yard.Core.Conversions.ToCNF.fst Main.fst
+VERFILES=\
+    IL.fst\
+    Yard.Core.Namer.fst\
+    Yard.Core.Conversions.TransformAux.fst\
+    Yard.Core.Conversions.SplitLongRule.fst\
+    #Yard.Core.Conversions.DeleteEpsRule.fst\
+    #Yard.Core.Conversions.DeleteChainRule.fst\
+    #Yard.Core.Conversions.RenameTerm.fst\
+    #Yard.Core.Conversions.ToCNF.fst\
+    Main.fst
+
 include ../Makefile.include
 
 LIB=../../lib
@@ -11,7 +21,8 @@ else
 FSC     = fsharpc --mlcompatibility $(addprefix -r , $(FS_LIBS))
 endif
 
-all: all-pos fs
+#all: all-pos fs
+all: all-pos
 
 all-pos: basictests
 
@@ -19,10 +30,20 @@ basictests: $(VERFILES)
 	$(FSTAR_OR_NUBUILD) --admit_fsi FStar.Set $(STDLIB) $(call add_stdlib_prefix, FStar.Int32.fst) $^
 
 fs: out Main.fst
-	$(FSTAR) --odir out --admit_fsi FStar.Set $(STDLIB) --codegen FSharp IL.fst Yard.Core.Namer.fst Yard.Core.Conversions.TransformAux.fst Yard.Core.Conversions.ToCNF.fst Main.fst
+	$(FSTAR) --odir out --admit_fsi FStar.Set $(STDLIB) --codegen FSharp\
+		IL.fst\
+		Yard.Core.Namer.fst\
+		Yard.Core.Conversions.TransformAux.fst\
+		Yard.Core.Conversions.SplitLongRule.fst\
+ 		#Yard.Core.Conversions.DeleteEpsRule.fst\
+ 		#Yard.Core.Conversions.DeleteChainRule.fst\
+		#Yard.Core.Conversions.RenameTerm.fst\
+		#Yard.Core.Conversions.ToCNF.fst\
+		Main.fst
 	cp $(FS_LIBS) out
 	$(FSC) -o out/Main.exe $(LIB)/fs/prims.fs $(LIB)/fs/io.fs out/Main.fs
 	$(FSRUNTIME) ./out/Main.exe
+	
 
 out:
 	mkdir -p out
