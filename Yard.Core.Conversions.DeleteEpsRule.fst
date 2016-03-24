@@ -4,7 +4,6 @@ module Yard.Core.Conversions.DeleteEpsRule
 
 // -- Функция для удаления эпсилон-правил-----------------------------------------------------------
 
-    //TODO: --Что делать с реализацией?
     assume val int32_tryParse : string -> Tot (bool * int)
 
     let deleteEpsRule (ruleList: list (Rule _ _)) =
@@ -32,7 +31,7 @@ module Yard.Core.Conversions.DeleteEpsRule
                 ) in
 
         //-- Проверка вхождения эпсилон-правила
-        let isEps s = epsList |> List.filter (fun x -> x = s) in
+        let isEps s = epsList |> List.Tot.filter (fun x -> x = s) in
 
 
         //-- Список эпсилон-правил входящих в данное правило  
