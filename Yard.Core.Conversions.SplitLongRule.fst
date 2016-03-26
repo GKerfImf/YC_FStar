@@ -22,7 +22,7 @@ module Yard.Core.Conversions.SplitLongRule
     val lengthBodyRule: Rule 'a 'b -> Tot int
     let lengthBodyRule rule = List.length (match rule.body with PSeq(e, a, l) -> e | _ -> [])
 
-    val cutRule: rule : (Rule 'a 'b) -> rl:(list (Rule 'a  'b)) -> Tot (list (Rule 'a 'b)) (decreases %[ lengthBodyRule rule; List.length rl])
+    val cutRule: rule : (Rule 'a 'b) -> resultRuleList:(list (Rule 'a  'b)) -> Tot (list (Rule 'a 'b)) (decreases %[ lengthBodyRule rule; List.length resultRuleList])
     let rec cutRule  (rule: Rule _ _) (resultRuleList: list (Rule _ _)) = 
         let elements = match rule.body with PSeq(e, a, l) -> e | _ -> [] in
         if List.length elements > 2 then

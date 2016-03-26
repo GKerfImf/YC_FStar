@@ -1,8 +1,8 @@
 VERFILES=\
     IL.fst\
     Yard.Core.Namer.fst\
-    Yard.Core.Conversions.TransformAux.fst\
-    Yard.Core.Conversions.SplitLongRule.fst\
+    #Yard.Core.Conversions.TransformAux.fst\
+    #Yard.Core.Conversions.SplitLongRule.fst\
     #Yard.Core.Conversions.DeleteEpsRule.fst\
     #Yard.Core.Conversions.DeleteChainRule.fst\
     #Yard.Core.Conversions.RenameTerm.fst\
@@ -33,8 +33,8 @@ fs: out Main.fst
 	$(FSTAR) --odir out --admit_fsi FStar.Set $(STDLIB) --codegen FSharp\
 		IL.fst\
         Yard.Core.Namer.fst\
-        Yard.Core.Conversions.TransformAux.fst\
-        Yard.Core.Conversions.SplitLongRule.fst\
+        #Yard.Core.Conversions.TransformAux.fst\
+        #Yard.Core.Conversions.SplitLongRule.fst\
         #Yard.Core.Conversions.DeleteEpsRule.fst\
         #Yard.Core.Conversions.DeleteChainRule.fst\
         #Yard.Core.Conversions.RenameTerm.fst\
