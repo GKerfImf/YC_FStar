@@ -28,7 +28,7 @@ module Yard.Core.Namer
         | _ -> admit()
 *)
 
-(*  И так не работает
+(*  //И так не работает
     val prodNewNameLemma:  
         n:int -> str:string -> 
         Lemma

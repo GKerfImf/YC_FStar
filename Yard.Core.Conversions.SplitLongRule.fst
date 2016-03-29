@@ -19,33 +19,43 @@ module Yard.Core.Conversions.SplitLongRule
     let tail_length l = ()
 
 
+    
     val lengthBodyRule: Rule 'a 'b -> Tot int
     let lengthBodyRule rule = List.length (match rule.body with PSeq(e, a, l) -> e | _ -> [])
 
-    val cutRule: rule : (Rule 'a 'b) -> resultRuleList:(list (Rule 'a  'b)) -> Tot (list (Rule 'a 'b)) (decreases %[ lengthBodyRule rule; List.length resultRuleList])
-    let rec cutRule  (rule: Rule _ _) (resultRuleList: list (Rule _ _)) = 
+    val getShortPSeq:
+        listRev:(list (elem 'a 'b)){List.length listRev > 2}
+        -> Tot (body:(Production 'a 'b){ (fun body -> (List.length (match body with PSeq(e, a, l) -> e | _ -> []) <= 2 )) body})
+    let getShortPSeq revEls = PSeq([List.Tot.hd revEls; List.Tot.hd (List.Tot.tl revEls)], None, None) 
+
+
+    val cutRule: 
+        rule : (Rule 'a 'b) 
+        -> resultRuleList:(list (Rule 'a  'b)){List.Tot.for_all (fun x -> lengthBodyRule x <= 2) resultRuleList} 
+        -> Tot (list (Rule 'a 'b)) (decreases %[ lengthBodyRule rule; List.length resultRuleList])
+    let rec cutRule rule resultRuleList = 
         let elements = match rule.body with PSeq(e, a, l) -> e | _ -> [] in
         if List.length elements > 2 then
             let revEls = List.rev elements in 
-            let ruleBody = PSeq([List.Tot.hd revEls; List.Tot.hd (List.Tot.tl revEls)], None, None) in
+            let ruleBody = getShortPSeq revEls in
             let newRule = TransformAux.createRule (Namer.newSource (List.length resultRuleList) rule.name) rule.args ruleBody false rule.metaArgs in 
             let newElem = TransformAux.createDefaultElem (PRef(newRule.name, None)) in
             let changedRule = List.rev (List.Tot.tl (List.Tot.tl revEls)) @ [newElem] in
- 
+
             cutRule ({ rule with body = 
                             PSeq(
                                 changedRule, 
                                 (match rule.body with PSeq(e, a, l) -> a | _ -> None),
-                                (match rule.body with PSeq(e, a, l) -> l | _ -> None)) })
-                    (resultRuleList @ [newRule]) 
+                                (match rule.body with PSeq(e, a, l) -> l | _ -> None)) }) ([]) //resultRuleList @ [newRule]
                     
         else
             resultRuleList @ [{ rule with name = Namer.newSource (List.length resultRuleList) rule.name}]
 
+
     val splitLongRule: list (Rule 'a 'b) -> Tot (list (Rule 'a 'b))
     let splitLongRule ruleList = List.Tot.collect (fun rule -> cutRule rule []) ruleList
 
-
+(*
     val mon_inc_cutRule_lemma: rule: (Rule 'a 'b) -> resultRuleList: list (Rule 'a 'b) ->
         Lemma
             (requires ( True )) 
@@ -68,8 +78,34 @@ module Yard.Core.Conversions.SplitLongRule
                                 (match rule.body with PSeq(e, a, l) -> l | _ -> None)) })
                             (resultRuleList @ [newRule]) 
         else ()
+*)
 
+    val short_right_rule_lemma: 
+        rule: (Rule 'a 'b) 
+        -> resultRuleList:(list (Rule 'a  'b)){List.Tot.for_all (fun x -> lengthBodyRule x <= 2) resultRuleList} 
+        -> Lemma
+            (requires ( True )) 
+            (ensures ( List.Tot.for_all (fun x -> lengthBodyRule x <= 2) (cutRule rule resultRuleList)  ))
+            (decreases %[ lengthBodyRule rule; List.length resultRuleList])
+            [SMTPat ( cutRule rule resultRuleList )]
+    let rec short_right_rule_lemma rule resultRuleList =
+        let elements = match rule.body with PSeq(e, a, l) -> e | _ -> [] in
+        if lengthBodyRule rule > 2 
+        then
+            let revEls = List.rev elements in 
+            let ruleBody = getShortPSeq revEls in
+            let newRule = TransformAux.createRule (Namer.newSource (List.length resultRuleList) rule.name) rule.args ruleBody false rule.metaArgs in 
+            let newElem = TransformAux.createDefaultElem (PRef(newRule.name, None)) in
+            let changedRule = List.rev (List.Tot.tl (List.Tot.tl revEls)) @ [newElem] in
+            short_right_rule_lemma ({ rule with body = 
+                            PSeq(
+                                changedRule, 
+                                (match rule.body with PSeq(e, a, l) -> a | _ -> None),
+                                (match rule.body with PSeq(e, a, l) -> l | _ -> None)) })
+                            ([])
+        else admit()
 
+(*
     val short_right_rule_lemma: 
         rule: (Rule 'a 'b) 
         -> resultRuleList:(list (Rule 'a 'b))
@@ -93,8 +129,8 @@ module Yard.Core.Conversions.SplitLongRule
                                 (match rule.body with PSeq(e, a, l) -> a | _ -> None),
                                 (match rule.body with PSeq(e, a, l) -> l | _ -> None)) })
                             (resultRuleList @ [newRule]) 
-        else admit() (* Как я понимаю, тут какие-то проблемы с resultRuleList *)
-
+        else () (* Как я понимаю, тут какие-то проблемы с resultRuleList *)
+*)
 
     val short_right_rules_lemma: r: list (Rule 'a 'b) ->
         Lemma
