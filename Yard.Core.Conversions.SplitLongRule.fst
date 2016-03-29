@@ -18,7 +18,6 @@ module Yard.Core.Conversions.SplitLongRule
             [SMTPat (List.Tot.tl l)]
     let tail_length l = ()
 
-
     
     val lengthBodyRule: Rule 'a 'b -> Tot int
     let lengthBodyRule rule = List.length (match rule.body with PSeq(e, a, l) -> e | _ -> [])
@@ -26,13 +25,20 @@ module Yard.Core.Conversions.SplitLongRule
     val getShortPSeq:
         listRev:(list (elem 'a 'b)){List.length listRev > 2}
         -> Tot (body:(Production 'a 'b){ (fun body -> (List.length (match body with PSeq(e, a, l) -> e | _ -> []) <= 2 )) body})
-    let getShortPSeq revEls = PSeq([List.Tot.hd revEls; List.Tot.hd (List.Tot.tl revEls)], None, None) 
+    let getShortPSeq revEls = PSeq([List.Tot.hd revEls; List.Tot.hd (List.Tot.tl revEls)], None, None)
+
+    assume val getListOfShort:
+        acc:(list (Rule 'a  'b)){List.Tot.for_all (fun x -> lengthBodyRule x <= 2) acc} 
+        -> item:(Rule 'a  'b){lengthBodyRule item <= 2}
+        -> Tot (result:(list (Rule 'a  'b)){List.Tot.for_all (fun x -> lengthBodyRule x <= 2) result} )
+    //let getListOfShort acc item = List.concat acc [item] //Что-то такое, наверное, не очень сложно придумать
 
 
+    //Я не стал отдельно формулировать лемму, а просто сказал, что результат будет содержать только короткие правила 
     val cutRule: 
         rule : (Rule 'a 'b) 
         -> resultRuleList:(list (Rule 'a  'b)){List.Tot.for_all (fun x -> lengthBodyRule x <= 2) resultRuleList} 
-        -> Tot (list (Rule 'a 'b)) (decreases %[ lengthBodyRule rule; List.length resultRuleList])
+        -> Tot (result:(list (Rule 'a 'b)){List.Tot.for_all (fun x -> lengthBodyRule x <= 2) result} ) (decreases %[ lengthBodyRule rule; List.length resultRuleList])
     let rec cutRule rule resultRuleList = 
         let elements = match rule.body with PSeq(e, a, l) -> e | _ -> [] in
         if List.length elements > 2 then
@@ -46,12 +52,13 @@ module Yard.Core.Conversions.SplitLongRule
                             PSeq(
                                 changedRule, 
                                 (match rule.body with PSeq(e, a, l) -> a | _ -> None),
-                                (match rule.body with PSeq(e, a, l) -> l | _ -> None)) }) ([]) //resultRuleList @ [newRule]
+                                (match rule.body with PSeq(e, a, l) -> l | _ -> None)) }) (getListOfShort resultRuleList newRule)
                     
         else
-            resultRuleList @ [{ rule with name = Namer.newSource (List.length resultRuleList) rule.name}]
+            getListOfShort resultRuleList ({ rule with name = Namer.newSource (List.length resultRuleList) rule.name})
 
 
+    //Теперь тут нужна небольшая лемма о том, что конкатенация листов с короткими правилами опять лист с короткими правилами
     val splitLongRule: list (Rule 'a 'b) -> Tot (list (Rule 'a 'b))
     let splitLongRule ruleList = List.Tot.collect (fun rule -> cutRule rule []) ruleList
 
@@ -79,7 +86,7 @@ module Yard.Core.Conversions.SplitLongRule
                             (resultRuleList @ [newRule]) 
         else ()
 *)
-
+(*
     val short_right_rule_lemma: 
         rule: (Rule 'a 'b) 
         -> resultRuleList:(list (Rule 'a  'b)){List.Tot.for_all (fun x -> lengthBodyRule x <= 2) resultRuleList} 
@@ -104,7 +111,7 @@ module Yard.Core.Conversions.SplitLongRule
                                 (match rule.body with PSeq(e, a, l) -> l | _ -> None)) })
                             ([])
         else admit()
-
+*)
 (*
     val short_right_rule_lemma: 
         rule: (Rule 'a 'b) 
@@ -138,7 +145,7 @@ module Yard.Core.Conversions.SplitLongRule
             (ensures (List.Tot.for_all (fun x -> lengthBodyRule x <= 2) (splitLongRule r) ))
     let rec short_right_rules_lemma r =
         match r with 
-        | [] -> ()
+        | [] -> admit()
         | hd::tl -> admit() (* don't works. short_right_rule_lemma hd [] ; short_right_rules_lemma tl *)
 
 
