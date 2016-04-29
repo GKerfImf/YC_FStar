@@ -5,7 +5,7 @@ module Yard.Core.Conversions.RenameTerm
 
 //--Переименование терминалов в нетерминалы в неподходящих правилах (вида s -> AB, s -> Ab, s -> bA)-------------------
 
-// infix operator? :(
+//TODO: infix operator? :(
 
     val isToken: elem 'a 'b -> Tot bool
     let isToken elem = match elem.rule with PToken _ -> true | _ -> false
@@ -21,7 +21,6 @@ module Yard.Core.Conversions.RenameTerm
 
 
 //assume val instanceOf: a:Type -> Tot a
-
  
     assume val toTerminalRule: 
         x:(Rule 'a 'b){
@@ -39,14 +38,14 @@ module Yard.Core.Conversions.RenameTerm
                 | _ -> false) 
             x 
         }
-    assume val startRule: x:(Rule 'a 'b){ (fun x -> match x.body with PSeq([],_,_) -> x.isStart | _ -> false) x }
+    //assume val startRule: 
 
     val isCNF: Rule 'a 'b -> Tot bool
     let isCNF (rule: Rule 'a 'b) = 
         match rule with 
         | toTerminalRule -> true
         | toTwoNonTermRule -> true
-        | startRule -> true 
+        | (x:(Rule 'a 'b){ (fun x -> match x.body with PSeq([],_,_) -> x.isStart | _ -> false) x }) -> true 
         | _ -> false
     
     let renameTerm ruleList = 

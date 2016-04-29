@@ -7,7 +7,7 @@ VERFILES=\
     #Yard.Core.Conversions.DeleteChainRule.fst\
     #Yard.Core.Conversions.RenameTerm.fst\
     #Yard.Core.Conversions.ToCNF.fst\
-    Main.fst
+    #Main.fst
 
 include ../Makefile.include
 
@@ -32,14 +32,14 @@ basictests: $(VERFILES)
 fs: out Main.fst
 	$(FSTAR) --odir out --admit_fsi FStar.Set $(STDLIB) --codegen FSharp\
 		IL.fst\
-		Yard.Core.Namer.fst\
-		Yard.Core.Conversions.TransformAux.fst\
-		Yard.Core.Conversions.SplitLongRule.fst\
- 		#Yard.Core.Conversions.DeleteEpsRule.fst\
- 		#Yard.Core.Conversions.DeleteChainRule.fst\
-		#Yard.Core.Conversions.RenameTerm.fst\
-		#Yard.Core.Conversions.ToCNF.fst\
-		Main.fst
+        Yard.Core.Namer.fst\
+        Yard.Core.Conversions.TransformAux.fst\
+        Yard.Core.Conversions.SplitLongRule.fst\
+        #Yard.Core.Conversions.DeleteEpsRule.fst\
+        #Yard.Core.Conversions.DeleteChainRule.fst\
+        #Yard.Core.Conversions.RenameTerm.fst\
+        #Yard.Core.Conversions.ToCNF.fst\
+        #Main.fst
 	cp $(FS_LIBS) out
 	$(FSC) -o out/Main.exe $(LIB)/fs/prims.fs $(LIB)/fs/io.fs out/Main.fs
 	$(FSRUNTIME) ./out/Main.exe
