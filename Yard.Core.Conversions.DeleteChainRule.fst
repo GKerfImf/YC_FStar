@@ -22,8 +22,7 @@ module Yard.Core.Conversions.DeleteChainRule
         | PSeq(elements, actionCode, lbl) -> 
             (List.length elements = 1) && (match (List.Tot.hd elements).rule with PRef(t,_) -> true | _ -> false)
         | _ -> false
-
-
+	//TODO: доказать тотальность
     val newRule: list (Rule 'a 'b) -> Rule 'a 'b -> string -> (list (Rule 'a 'b))
     let rec newRule (ruleList: list (Rule _ _)) (mainRule: Rule _ _) (name:string) =
         List.collect
@@ -39,7 +38,7 @@ module Yard.Core.Conversions.DeleteChainRule
                 else []
             )
             ruleList
-
+	//TODO: доказать тотальность и progress: в результате нет цепных правил
     val deleteChainRule: ruleList: list (Rule 'a 'b) -> (list (Rule 'a 'b))
     let deleteChainRule (ruleList: list (Rule _ _)) = 
         List.collect
