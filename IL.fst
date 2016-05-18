@@ -6,60 +6,32 @@ module IL
 // Source
 //-----------------------------------------------------------------------------------------------------------------
 	type Position = {
-		absoluteOffset : ref int;
-		line: ref int;
-		column : ref int
-		//toString : unit -> string
+		absoluteOffset : int;
+		line: int;
+		column : int	
 	}
 
 	let new_position a l c = 
-		let a = ref a in
-		let l = ref l in
-		let c = ref c in
-			{absoluteOffset = a; line = l; column = c}
-
-	(* temp *)
-	type Lexing_Position = {
-		absoluteOffset : ref int; 
-		line : ref int; 
-		column : ref int
-	}
-
-	(* not "new_position" :( *)
-	let new_position2 (fslexPos : Lexing_Position) =
-			{absoluteOffset = fslexPos.absoluteOffset; line = fslexPos.line; column = fslexPos.column} 
+		{absoluteOffset = a; line = l; column = c}
 
 	type Source = {
 		text : string;
-		startPos : ref Position;
-		endPos : ref Position;
-		file : ref string
+		startPos : Position;
+		endPos : Position;
+		file : string
 	}
 
     let new_Source t s e f = 
-        let t = t in
-        let s = ref s in
-        let e = ref e in
-        let f = ref f in
-            {text = t; startPos = s; endPos = e; file = f}
-
+		{text = t; startPos = s; endPos = e; file = f}
+		
 	(* (new_position 0 0 0) -- new Position()  :( *)
 	let new_Source0 text = new_Source text (new_position 0 0 0) (new_position 0 0 0) ""
-
-(*		new (text, origin : Sourse) =
-            {text = text; startPos = origin.startPos; endPos = origin.endPos; file = origin.file}
-        new (text, startPos : Lexing.Position, endPos : Lexing.Position) =
-            Sourse (text, new Position(startPos), new Position(endPos), startPos.FileName)
-        new (text, lexbuf : Lexing.LexBuffer<_>) =
-            Sourse (text, lexbuf.StartPos, lexbuf.EndPos) *)
+		
 //-----------------------------------------------------------------------------------------------------------------
 
 
 // Production
-//-----------------------------------------------------------------------------------------------------------------
-    (*  let num = ref 0                                                                                 *) 
-    (*  type IRuleType = interface end                       (????)                                     *)
-        
+//-----------------------------------------------------------------------------------------------------------------       
     type DLabel = {
         label: string;
         weight: option float
@@ -175,7 +147,7 @@ module IL
         grammar : Grammar 'patt 'expr;
         (*  Text after a grammar description, what will be simply copied                                    *)
         foot    : option 'expr;
-        (*options : Mao string string;*)
+        (*options : Map string string;*)
         (*tokens : Map string (option string)*)
     }    
     
