@@ -6,7 +6,7 @@ module Yard.Core.Conversions.DeleteEpsRule
 	
 // -- Функция для удаления эпсилон-правил-----------------------------------------------------------
 
-    assume val int32_tryParse : string -> Tot (bool * nat)
+    assume val int32_tryParse : string -> Tot (bool * int)
 	
 	val listfromto_acc: a:int {a >= 1} -> b:int {b >= a} -> list int -> Tot (list int)
 	let rec listfromto_acc a b acc =
@@ -67,7 +67,12 @@ module Yard.Core.Conversions.DeleteEpsRule
 		| [] -> []
 		| hd::tl -> List.Tot.append (newBodyCreateElem hd i ruleList) (newBody tl (i + 1) ruleList)			
 	
- 	
+	val nth: list 'a -> int -> Tot (option 'a)
+	let rec nth l n = match l with
+	  | []     -> None
+	  | hd::tl -> if n = 0 then Some hd 
+				  else if n < 0 then None else nth tl (n - 1)
+  
 	val addRule: Rule 'a  'b -> list string  -> list int -> Tot (list (Rule 'a  'b))
 	let addRule numberRule epsRef eps =
 		let epsWithNameExists t =
@@ -84,8 +89,7 @@ module Yard.Core.Conversions.DeleteEpsRule
 						if (fst (int32_tryParse t.text))
 						then 
 							(* WARNING: 'if' cannot be used in patterns *)
-							//решить, что делать с -1 							
-							(match (List.Tot.nth epsRef (snd (int32_tryParse t.text)))  with 
+							(match (nth epsRef (snd (int32_tryParse t.text) - 1))  with 
 							| Some x -> [TransformAux.createSimpleElem (PRef(new_Source0(x), None)) elem.binding]
 							| None -> [])
 						else [elem]																													
