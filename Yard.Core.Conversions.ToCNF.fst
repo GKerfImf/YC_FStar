@@ -3,13 +3,12 @@ module Yard.Core.Conversions.ToCNF
     open Yard.Core.Conversions
     
 //--CNF--------------------------------------------------------------------------------------------------------
-    let toCNFrule (ruleList: list (Rule _ _)) = 
-        ruleList
-        |> SplitLongRule.splitLongRule
-        |> DeleteEpsRule.deleteEpsRule 
-        |> DeleteChainRule.deleteChainRule
-        |> RenameTerm.renameTerm 
-
+	val toCNFrule: list (Rule 'a 'b) -> Tot (list (Rule 'a 'b))
+    let toCNFrule ruleList = 
+		let resSplitLongRule = SplitLongRule.splitLongRule ruleList in 
+			let resDeleteEpsRule = DeleteEpsRule.deleteEpsRule resSplitLongRule in 
+				let resDeleteChainRule = DeleteChainRule.deleteChainRule resDeleteEpsRule in 
+					RenameTerm.renameTerm resDeleteChainRule        
 
 //-- Main lemma sketch
 

@@ -145,6 +145,6 @@ module Yard.Core.Conversions.DeleteEpsRule
 
 	//TODO: доказать progress: в результате нет eps-правил
 	val deleteEpsRule: list (Rule 'a  'b) -> Tot (list (Rule 'a  'b))
-    let deleteEpsRule (ruleList: list (Rule _ _)) =                  
+    let deleteEpsRule ruleList =                  
         let rulesFilter =  List.Tot.filter (fun r -> not (match r.body with PSeq([],_,_) -> true | _ -> false)) (newRules ruleList) in 
 			deleteTrashRule rulesFilter
