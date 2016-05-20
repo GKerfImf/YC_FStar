@@ -99,22 +99,20 @@ module Yard.Core.Conversions.DeleteEpsRule
 		let ac,lbl = match numberRule.body with PSeq(e, a, l) -> a,l | _ -> None,None in			
 		[{numberRule with body=PSeq(newBody, ac, lbl)}]
 
-				
+	val numberBody: Rule 'a  'b -> 	list (Rule 'a  'b) -> Tot (Production 'a 'b)
+	let numberBody rule ruleList =
+		let ac, lbl = match rule.body with PSeq(e, a, l) -> a,l | x -> None,None in
+			match rule.body with
+			|PSeq(elements, _, _) -> PSeq(newBody elements 0 ruleList, ac, lbl)
+			|_ -> rule.body
+		
 	//-- Функция для добавления нового правила
 	val newRule: Rule 'a  'b -> list string -> list (Rule 'a  'b) -> Tot (list (Rule 'a  'b))
 	let newRule rule epsRef ruleList =
 		if not (List.Tot.isEmpty epsRef) then
 			let numberEpsRef = genSubsets (List.Tot.length epsRef) in
 			
-			let ac, lbl = match rule.body with PSeq(e, a, l) -> a,l | x -> None,None in			
-
-			let numberBody =
-				match rule.body with
-				|PSeq(elements, _, _) -> 
-					PSeq(newBody elements 0 ruleList, ac, lbl)
-				|_ -> rule.body in			
-			
-			let numberRule = {rule with body=numberBody} in
+			let numberRule = {rule with body=numberBody rule ruleList} in
 				List.Tot.collect (addRule numberRule epsRef) numberEpsRef
 		else [] 
 		
