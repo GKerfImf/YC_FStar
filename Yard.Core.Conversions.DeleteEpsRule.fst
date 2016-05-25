@@ -32,7 +32,7 @@ module Yard.Core.Conversions.DeleteEpsRule
 		List.Tot.collect
 			(fun rule -> 
 				match rule.body with
-				| PSeq(elements, actionCode, lbl) -> 
+				| PSeq(elements, _, _) -> 
 					if List.Tot.isEmpty elements then [rule.name.text] else []
 				| _ -> []
 			) ruleList
@@ -88,7 +88,6 @@ module Yard.Core.Conversions.DeleteEpsRule
 					else 
 						if (fst (int32_tryParse t.text))
 						then 
-							(* WARNING: 'if' cannot be used in patterns *)
 							(match (nth epsRef (snd (int32_tryParse t.text) - 1))  with 
 							| Some x -> [TransformAux.createSimpleElem (PRef(new_Source0(x), None)) elem.binding]
 							| None -> [])
@@ -136,7 +135,7 @@ module Yard.Core.Conversions.DeleteEpsRule
 		List.Tot.collect
 				(fun rule ->
 					match rule.body with
-					| PSeq(elements, actionCode, lbl) ->
+					| PSeq(elements, _, _) ->
 						if not (List.Tot.isEmpty elements) 
 						then List.Tot.append (newRule rule (epsInRule elements ruleList) ruleList) [rule]
 						else []	                

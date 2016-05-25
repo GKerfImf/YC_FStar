@@ -47,8 +47,8 @@ module Yard.Core.Conversions.DeleteChainRule
         List.Tot.collect
             (fun rule -> 
                 match rule.body with
-                | PSeq(elements, actionCode, lbl) ->					
-                    (match ((List.length elements) = 1 && (let elem0 = List.Tot.hd elements in match elem0.rule with PRef(_, _) -> true | _ -> false)) with 
+                | PSeq(elements, _, _) ->					
+                    (match isOneRule rule with 
                         | true -> newRule ruleList rule lengthRuleList (let elem0 = List.Tot.hd elements in match elem0.rule with PRef(t, _) -> t.text | _ -> "")
                         | _ -> [rule])
                 | _ -> [rule]
