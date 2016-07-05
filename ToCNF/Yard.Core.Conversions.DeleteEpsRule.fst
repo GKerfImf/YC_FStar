@@ -26,7 +26,7 @@ module Yard.Core.Conversions.DeleteEpsRule
 	val genSubsets: n: int {n >= 1} -> Tot (list (list int))
 	let genSubsets n = powerset (listfromto 1 n)
 		
-	// Список всех правил
+	// Список всех eps-правил
 	val epsList: list (Rule 'a  'b) -> Tot (list string)
 	let epsList ruleList = 
 		List.Tot.collect
@@ -147,3 +147,7 @@ module Yard.Core.Conversions.DeleteEpsRule
     let deleteEpsRule ruleList =                  
         let rulesFilter =  List.Tot.filter (fun r -> not (match r.body with PSeq([],_,_) -> true | _ -> false)) (newRules ruleList) in 
 			deleteTrashRule rulesFilter
+
+
+
+	

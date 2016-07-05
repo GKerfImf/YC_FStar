@@ -4,14 +4,14 @@ module Yard.Core.Conversions.SplitLongRule
     open Yard.Core.Conversions
     open FStar.ListProperties
 
-    val rev_length : l:(list 'a)-> 
+    val rev_length: l:(list 'a)-> 
         Lemma 
             (requires True) 
             (ensures (List.length (List.rev l) = List.length l)) 
             [SMTPat (List.rev l)]
     let rev_length l = rev_acc_length l []
 
-    val tail_length : l:(list 'a){is_Cons l}  -> 
+    val tail_length: l:(list 'a){is_Cons l}  -> 
         Lemma 
             (requires True)
             (ensures (List.length (List.Tot.tl l) = (List.length l) - 1)) 
@@ -40,7 +40,6 @@ module Yard.Core.Conversions.SplitLongRule
         -> Tot (result:(list (Rule 'a  'b)){List.Tot.for_all (fun x -> TransformAux.lengthBodyRule x <= 2) result} )
     let getListOfShort acc item = List.Tot.append acc [item]
 		
-	//Не выводит правильные типы, когда вместо getListOfShort используется List.Tot.append
     val cutRule: 
         rule : (Rule 'a 'b) 
         -> resultRuleList:(list (Rule 'a  'b)){List.Tot.for_all (fun x -> TransformAux.lengthBodyRule x <= 2) resultRuleList} 
@@ -79,7 +78,7 @@ module Yard.Core.Conversions.SplitLongRule
 		| [] -> []
 		| hd::tl -> append_ShortRules (f hd) (collect_ShortRules f tl)
 	
-	//Не понятно, почему F* сам не может вывести тип для List.Tot.collect, когда есть лемма для List.Tot.append	(append_ShortRulesL)	
+	//Непонятно, почему F* сам не может вывести тип для List.Tot.collect, когда есть лемма для List.Tot.append	(append_ShortRulesL)	
     val splitLongRule: 
 		ruleList : list (Rule 'a 'b) 
 	    -> Tot (result:(list (Rule 'a 'b)){List.Tot.for_all (fun x -> TransformAux.lengthBodyRule x <= 2) result})
