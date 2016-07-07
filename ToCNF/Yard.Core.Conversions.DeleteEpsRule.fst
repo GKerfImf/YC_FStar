@@ -17,17 +17,6 @@ module Yard.Core.Conversions.DeleteEpsRule
         | [] -> [[]]
         | x::xs -> List.Tot.collect (fun subset -> [subset; List.Tot.append [x] subset]) (powerset xs)
 
-
-    // ruleList -> [Ai => eps]
-    val getEpsRuleNameList: list (Rule 'a 'b) -> Tot (list string)
-    let getEpsRuleNameList ruleList =
-        let isEpsRule rule = 
-            match rule.body with
-            | PSeq(elements, _, _) -> List.isEmpty elements
-            | _ -> false in 
-        List.Tot.collect (fun rule -> if (isEpsRule rule) then [rule.name.text] else []) ruleList
-
-
     val getRightPartRuleNameList: Rule 'a 'b -> Tot (list string)
     let getRightPartRuleNameList rule = 
         match rule.body with
@@ -64,57 +53,59 @@ module Yard.Core.Conversions.DeleteEpsRule
         List.Tot.fold_right helpRemDup lst []
 
     // (List.filter f list).length <= list.length
-    val filterListLengthLemma: f:('a -> Tot bool) -> l:(list 'a) -> 
+    val filterLengthLemma: f:('a -> Tot bool) -> l:(list 'a) -> 
         Lemma 
             (requires True) 
             (ensures (List.length (List.Tot.filter f l)) <= List.length l) 
             [SMTPat (List.Tot.filter f l)]
-    let rec filterListLengthLemma f l = 
+    let rec filterLengthLemma f l = 
         match l with  
         | [] -> ()
-        | hd::tl -> filterListLengthLemma f tl
+        | hd::tl -> filterLengthLemma f tl
 
     val except: list string -> original:list string -> Tot (filtered:list string {List.length filtered <= List.length original}) 
     let except itemsToExclude lst = 
         List.Tot.filter (fun el -> not (List.Tot.contains el itemsToExclude)) lst
 
-
     val nonEpsGenHelper: list (Rule 'a 'b) -> nonEpsGen: list string -> Tot (list string) (decreases %[List.length nonEpsGen])
     let rec nonEpsGenHelper ruleList nonEpsGenNameList =
-        
         let epsGen = 
             removeDuplicates (List.Tot.map (fun rule -> rule.name.text)  (List.Tot.filter (fun rule -> isEpsWeakGen rule nonEpsGenNameList) ruleList)) in  
-        
         let (newNonEpsGenNameList: list string {List.length newNonEpsGenNameList <= List.length nonEpsGenNameList}) = 
             except epsGen nonEpsGenNameList in
-
-        // TODO: доказать: (длины листов равны => они ещё и поэлементно равны)
-        if (List.length newNonEpsGenNameList = List.length nonEpsGenNameList) 
+        
+        if (List.length newNonEpsGenNameList = List.length nonEpsGenNameList)  // TODO: доказать: (длины листов равны => они ещё и поэлементно равны)
         then nonEpsGenNameList
         else nonEpsGenHelper ruleList (newNonEpsGenNameList)
 
+    val isEpsRule: Rule 'a 'b -> Tot bool
+    let isEpsRule rule = match rule.body with PSeq([], _, _) -> true | _ -> false
+
+    val isNotEpsRule: Rule 'a 'b -> Tot bool
+    let isNotEpsRule rule = not (isEpsRule rule)
+
+    // ruleList -> [Ai => eps]
+    val getEpsRuleNameList: list (Rule 'a 'b) -> Tot (list string)
+    let getEpsRuleNameList ruleList =
+        List.Tot.collect (fun rule -> if (isEpsRule rule) then [rule.name.text] else []) ruleList
+
     // ruleList -> [Ai =>* eps]
-    val getEpsGenNameList: list (Rule 'a 'b) -> Tot (list string) 
-    let getEpsGenNameList ruleList =
+    val getEpsGenRuleNameList: list (Rule 'a 'b) -> Tot (list string) 
+    let getEpsGenRuleNameList ruleList =
         let allNonterm = removeDuplicates (List.Tot.map (fun rule -> rule.name.text) ruleList) in 
         let epsRuleList = getEpsRuleNameList ruleList in 
         let epsGenRuleList = except (nonEpsGenHelper ruleList (except epsRuleList allNonterm)) allNonterm in
         epsGenRuleList
 
-
     val newRules: Rule 'a 'b -> list string -> Tot (list (Rule 'a 'b))
     let newRules rule epsRef = 
         if not (List.isEmpty epsRef) then
-
             let pList = getRightPartRuleNameList rule in
             let pRefList = getRightPartRulePRefNameList rule in
             let nonEpsGeneratingTerms = List.Tot.filter (fun name -> not (List.Tot.contains name epsRef)) pList in
-
             let powRule = (powerset pList) in
-
             let powRulesTrue = List.Tot.filter (fun listName -> List.Tot.for_all (fun nET -> List.Tot.contains nET listName) nonEpsGeneratingTerms) powRule in
-            
-            let temp1 = 
+            let packString = 
                 List.Tot.collect 
                     (fun powRule -> 
                         [List.Tot.collect 
@@ -124,50 +115,51 @@ module Yard.Core.Conversions.DeleteEpsRule
                                 else [TransformAux.createSimpleElem (PToken(new_Source0(str))) None] 
                             ) powRule]
                     ) powRulesTrue in
-
             let ac,lbl = match rule.body with PSeq(e, a, l) -> a,l | _ -> None,None in
-            let ans = List.Tot.collect (fun x -> [{rule with body=PSeq(x, ac, lbl)}]) temp1 in
-
-            ans 
-
+            List.Tot.collect (fun x -> [{rule with body=PSeq(x, ac, lbl)}]) packString
         else [rule]
 
+    // List.forall f (List.filter f list) == true
+    val filterPredLemma: f:('a -> Tot bool) -> l:(list 'a) -> 
+        Lemma 
+            (requires True) 
+            (ensures (List.Tot.for_all f (List.Tot.filter f l)))
+            [SMTPat (List.Tot.filter f l)]
+    let rec filterPredLemma f l = 
+        match l with  
+        | [] -> ()
+        | hd::tl -> filterPredLemma f tl
 
-    val deleteEpsRule: list (Rule 'a 'b) -> Tot (list (Rule 'a 'b))
+    val deleteEpsRule: 
+        list (Rule 'a 'b) 
+        -> Tot (result: (list (Rule 'a 'b)) {List.Tot.for_all isNotEpsRule result})
     let deleteEpsRule ruleList =
-
-        let epsGenNameList = getEpsGenNameList ruleList in
-
+        let epsGenNameList = getEpsGenRuleNameList ruleList in
         let rigthPartRuleGenEpsRules rule = 
             List.Tot.filter (fun term -> List.Tot.contains term epsGenNameList) (getRightPartRulePRefNameList rule) in 
- 
-        List.Tot.filter (fun r -> match r.body with PSeq([],_,_) -> false | _ -> true) (List.Tot.collect (fun rule -> (newRules rule (rigthPartRuleGenEpsRules rule))) ruleList)  
+        List.Tot.filter isNotEpsRule (List.Tot.collect (fun rule -> (newRules rule (rigthPartRuleGenEpsRules rule))) ruleList)
 
 
+    // Bonus:
+    // TODO: List.Tot.for_all isNotEpsRule result ==> List.isEmpty (getEpsRuleNameList ruleList)
+    // TODO: List.isEmpty (getEpsRuleNameList ruleList) ==> List.isEmpty (getEpsGenRuleNameList ruleList) 
 
+    // List.Tot.for_all isNotEpsRule result ==> List.isEmpty (getEpsRuleNameList ruleList)
+    val epsGenLemma1: ruleList:list (Rule 'a 'b) -> 
+        Lemma 
+            (requires (List.Tot.for_all isNotEpsRule ruleList))
+            (ensures (List.isEmpty (getEpsRuleNameList ruleList)))
+    let rec epsGenLemma1 ruleList = 
+        match ruleList with  
+        | [] -> ()
+        | hd::tl -> admit()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    // нет [A => eps] => нет [A =>* eps]
+    val epsGenLemma2: ruleList:list (Rule 'a 'b) -> 
+        Lemma 
+            (requires (List.isEmpty (getEpsRuleNameList ruleList)))
+            (ensures (List.isEmpty (getEpsGenRuleNameList ruleList)))
+    let rec epsGenLemma2 ruleList = 
+        match ruleList with  
+        | [] -> ()
+        | hd::tl -> admit()
