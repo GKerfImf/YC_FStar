@@ -1,8 +1,8 @@
 VERFILES=\
     IL.fst\
-    Yard.Core.Namer.fst\
     Yard.Core.Conversions.TransformAux.fst\
-    Yard.Core.Conversions.DeleteEpsRule.fst
+    Yard.Core.Conversions.DeleteChainRule.fst\
+    Yard.Core.Conversions.RenameTerm.fst
 
 LIB_FILES =\
 	FStar.Set.fsi\

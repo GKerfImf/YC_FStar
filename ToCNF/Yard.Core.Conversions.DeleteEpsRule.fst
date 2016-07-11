@@ -8,12 +8,15 @@ module Yard.Core.Conversions.DeleteEpsRule
 // -- Функция для удаления эпсилон-правил -----------------------------------------------------------
 
 // TODO: ограничение на "правильные (PSeq)" правые части 
+    val isPSeq: Production 'a 'b -> Tot bool
+    let isPSeq prod = match prod with PSeq(_) -> true | _ -> false
+
 // TODO: Если правила короткие, то количество правил вырастает полиномиально
+// ???
 
     // X:List --> 2^X
     val powerset: list string -> Tot (res: list (list string){is_Cons res})
-    let rec powerset =
-        function
+    let rec powerset = function
         | [] -> [[]]
         | x::xs -> List.Tot.collect (fun subset -> [subset; List.Tot.append [x] subset]) (powerset xs)
 
