@@ -5,12 +5,6 @@ module Yard.Core.Conversions.DeleteEpsRule
     open FStar.ListProperties
     open TransformAux
     
-// -- Функция для удаления эпсилон-правил -----------------------------------------------------------
-
-// TODO: ограничение на "правильные (PSeq)" правые части 
-    val isPSeq: Production 'a 'b -> Tot bool
-    let isPSeq prod = match prod with PSeq(_) -> true | _ -> false
-
 // TODO: Если правила короткие, то количество правил вырастает полиномиально
 // ???
 
@@ -20,6 +14,7 @@ module Yard.Core.Conversions.DeleteEpsRule
         | [] -> [[]]
         | x::xs -> List.Tot.collect (fun subset -> [subset; List.Tot.append [x] subset]) (powerset xs)
 
+//-----------------------to helper --------------------------------------
     val getRightPartRuleNameList: Rule 'a 'b -> Tot (list string)
     let getRightPartRuleNameList rule = 
         match rule.body with
@@ -27,6 +22,7 @@ module Yard.Core.Conversions.DeleteEpsRule
             List.Tot.collect (fun elem -> match elem.rule with | PRef(s,_) | PToken(s) -> [s.text] | _ -> []) elements
         | _ -> [] // Тут мы никогда не появляемся
 
+//-----------------------to helper --------------------------------------
     val getRightPartRulePRefNameList: Rule 'a 'b -> Tot (list string)
     let getRightPartRulePRefNameList rule = 
         match rule.body with
@@ -47,6 +43,7 @@ module Yard.Core.Conversions.DeleteEpsRule
                 ) elements
         | _ -> false // Тут мы никогда не появляемся
 
+//-----------------------to helper --------------------------------------
     val removeDuplicates: list 'a -> Tot (list 'a)
     let removeDuplicates lst = 
         let helpRemDup item acc =
@@ -55,6 +52,7 @@ module Yard.Core.Conversions.DeleteEpsRule
             | _ -> if List.existsb (fun x -> x = item) acc then acc else item::acc in 
         List.Tot.fold_right helpRemDup lst []
 
+//-----------------------to helper --------------------------------------
     // (List.filter f list).length <= list.length
     val filterLengthLemma: f:('a -> Tot bool) -> l:(list 'a) -> 
         Lemma 
@@ -70,6 +68,7 @@ module Yard.Core.Conversions.DeleteEpsRule
     let except itemsToExclude lst = 
         List.Tot.filter (fun el -> not (List.Tot.contains el itemsToExclude)) lst
 
+
     val nonEpsGenHelper: list (Rule 'a 'b) -> nonEpsGen: list string -> Tot (list string) (decreases %[List.length nonEpsGen])
     let rec nonEpsGenHelper ruleList nonEpsGenNameList =
         let epsGen = 
@@ -81,6 +80,7 @@ module Yard.Core.Conversions.DeleteEpsRule
         then nonEpsGenNameList
         else nonEpsGenHelper ruleList (newNonEpsGenNameList)
 
+//-----------------------to helper --------------------------------------
     val isEpsRule: Rule 'a 'b -> Tot bool
     let isEpsRule rule = match rule.body with PSeq([], _, _) -> true | _ -> false
 

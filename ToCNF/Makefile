@@ -1,9 +1,15 @@
 VERFILES=\
-    IL.fst\
+	IL.fst\
+    Yard.Core.Namer.fst\
     Yard.Core.Conversions.TransformAux.fst\
+    Yard.Core.Conversions.Helpers.fst\
+    Yard.Core.Conversions.SplitLongRule.fst\
+    Yard.Core.Conversions.DeleteEpsRule.fst\
     Yard.Core.Conversions.DeleteChainRule.fst\
-    Yard.Core.Conversions.RenameTerm.fst
-
+    Yard.Core.Conversions.DeleteUseless.fst\
+    Yard.Core.Conversions.RenameTerm.fst\
+    Yard.Core.Conversions.ToCNF.fst
+    
 LIB_FILES =\
 	FStar.Set.fsi\
 	FStar.Heap.fst\
