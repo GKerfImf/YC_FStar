@@ -5,9 +5,9 @@ module Yard.Core.Conversions.ToCNF
 //--CNF--------------------------------------------------------------------------------------------------------
     val toCNFrule: list (Rule 'a 'b) -> Tot (list (Rule 'a 'b))
     let toCNFrule ruleList =
-    //    RenameTerm.renameTerm (
-    //        DeleteUseless.deleteUseless (
-    //            DeleteChainRule.deleteChainRule (
-    //             DeleteEpsRule.deleteEpsRule(
-    //                    SplitLongRule.splitLongRule (
-                            ruleList //))))) 
+        RenameTerm.renameTerm (
+            DeleteUseless.deleteUseless (
+                DeleteChainRule.deleteChainRule (
+                 DeleteEpsRule.deleteEpsRule(
+                        SplitLongRule.splitLongRule (
+                            ruleList))))) 
