@@ -1,50 +1,60 @@
 module Main
-open FStar.IO
-open IL
-open Yard.Core.Conversions
-open Yard.Core.Conversions.DeleteChainRule
+	open FStar.IO
+	open IL
+	open Yard.Core.Conversions
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 
-val create: Production 'a 'b -> Tot (elem 'a 'b)
-let create aRule = {omit=false; binding=None; checker=None; rule = aRule}
+    val create: 
+         production 'a 'b -> Tot (elem 'a 'b)
+    let create arule = {omit=false; binding=None; checker=None; rule = arule}
 
-let test = (Helpers.simpleStartRule "S" (List.Tot.map create [PRef (new_Source0 "A", None); PToken (new_Source0 "s")]))
-    @ (Helpers.simpleNotStartRule "A" (List.map create [PRef (new_Source0 "B", None)]))
-    @ (Helpers.simpleNotStartRule "B" (List.map create [PRef (new_Source0 "C", None)]))
-    @ (Helpers.simpleNotStartRule "C" (List.map create [PToken (new_Source0 "c")]))
-    @ (Helpers.simpleNotStartRule "C" (List.map create [])) 
+	val testForDeleteChainRule: list (rule0: (rule source source) {Helpers.isPSeq rule0.body}) 
+	let testForDeleteChainRule = (Helpers.simpleStartRule "S" (List.Tot.map create [PRef (new_Source0 "A", None); PToken (new_Source0 "s")]))
+	    @ (Helpers.simpleNotStartRule "A" (List.Tot.map create [PRef (new_Source0 "B", None)]))
+	    @ (Helpers.simpleNotStartRule "B" (List.Tot.map create [PRef (new_Source0 "C", None)]))
+	    @ (Helpers.simpleNotStartRule "C" (List.Tot.map create [PToken (new_Source0 "c")]))
+	    @ (Helpers.simpleNotStartRule "C" (List.Tot.map create [])) 
+
+	val testForSplitLongRule: list (rule source source)
+	let testForSplitLongRule = (Helpers.simpleStartRule "S" (List.Tot.map create [PRef (new_Source0 "A", None); PRef (new_Source0 "B", None); PRef (new_Source0 "C", None); PRef (new_Source0 "D", None); PToken (new_Source0 "s")]))
+	    @ (Helpers.simpleNotStartRule "A" (List.Tot.map create [PRef (new_Source0 "A", None); PRef (new_Source0 "B", None); PRef (new_Source0 "C", None); PRef (new_Source0 "D", None); PToken (new_Source0 "a")]))
+	    @ (Helpers.simpleNotStartRule "B" (List.Tot.map create [PRef (new_Source0 "A", None); PRef (new_Source0 "B", None); PRef (new_Source0 "C", None); PRef (new_Source0 "D", None); PToken (new_Source0 "b")]))
+	    @ (Helpers.simpleNotStartRule "C" (List.Tot.map create [PRef (new_Source0 "A", None); PRef (new_Source0 "B", None); PRef (new_Source0 "C", None); PRef (new_Source0 "D", None); PToken (new_Source0 "c")]))
+	    @ (Helpers.simpleNotStartRule "D" (List.Tot.map create [PRef (new_Source0 "A", None); PRef (new_Source0 "B", None); PRef (new_Source0 "C", None); PRef (new_Source0 "D", None); PToken (new_Source0 "d")])) 
+
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 
-let rec concat l = match l with [] -> "" | x::xs -> x ^ " " ^ concat xs 
+	let rec concat l = match l with | [] -> "" | x::xs -> x ^ " " ^ concat xs 
 
-let printRule rule =
-	let rec printRuleBody ruleBody = 
-	    match ruleBody with
-        | PSeq (ruleSeq, _, _) -> ruleSeq |> List.map (fun x -> "(" ^ printRuleBody x.rule ^ ")")  |> concat
-        | PToken(s) |PRef (s,_) -> s.text
-        | _ -> "" in 
+	let printrule rule =
+        let printruleBody2 ruleBody = 
+            match ruleBody with
+            | PToken(s) |PRef (s,_) -> s.text
+            | _ -> "" in 
 
-	(if rule.isStart then "*" else "") ^ rule.name.text ^ " --> " ^ printRuleBody rule.body
+        let printruleBody ruleBody = 
+            match ruleBody with
+            | PSeq (ruleSeq, _, _) -> ruleSeq |> List.Tot.map (fun x -> "(" ^ printruleBody2 x.rule ^ ")")  |> concat
+            | PToken(s) |PRef (s,_) -> s.text
+            | _ -> "" in 
 
-
-val printListRule1: (list (rule: (Rule 'a 'b) {Helpers.isPSeq rule.body} )) -> string
-let rec printListRule1 ruleList = 
-	if (List.length ruleList > 1) 
-	then printRule (List.hd ruleList) ^ "\n" ^  printListRule1 (List.tl ruleList)
-	else printRule (List.hd ruleList)
-
-val printListRule2: (list (rule: (Rule 'a 'b) {Helpers.isPSeq rule.body && isNonUnitRule rule})) -> string
-let rec printListRule2 ruleList = 
-	if (List.length ruleList > 1) 
-	then printRule (List.hd ruleList) ^ "\n" ^  printListRule2 (List.tl ruleList)
-	else printRule (List.hd ruleList)
+		(if rule.isStart then "*" else "") ^ rule.name.text ^ " --> " ^ printruleBody rule.body
 
 
+	val printListRule: #a:eqtype-> #b:eqtype
+		-> (list (rule0: (rule a b) {Helpers.isPSeq rule0.body} )) -> string
+	let rec printListRule #a #b ruleList = 
+		if (List.Tot.length ruleList > 1) 
+		then printrule (List.Tot.hd ruleList) ^ "\n" ^  printListRule (List.Tot.tl ruleList)
+		else (match ruleList with | [] -> "[]" | x::xs -> printrule x)
 
-let main =
-	print_string ("\n" ^ printListRule1 test ^ "\n");
-	print_string ("\n" ^ printListRule2 (deleteChainRule test) ^ "\n")
-
-
-
+    let main =
+        print_string "Hello, universes!\n";
+		print_string ("\n" ^ printListRule testForSplitLongRule ^ "\n");
+		print_string ("\n" ^ printListRule (SplitLongRule.splitLongRule testForSplitLongRule) ^ "\n")
+		//
+		//print_string ("\n" ^ printListRule (DeleteChainRule.deleteChainRule testForDeleteChainRule) ^ "\n")
+		//
+		//
+		

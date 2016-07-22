@@ -1,74 +1,77 @@
 module Yard.Core.Conversions.DeleteEpsRule
     open IL
-    open Yard.Core
-    open Yard.Core.Conversions
-    open FStar.ListProperties
+
+    val createSimpleElem: #a:Type -> #b:Type -> production a b -> option a -> Tot (elem a b)
+    let createSimpleElem #a #b rulProd bind = 
+        { omit = false; rule = rulProd; binding = bind; checker = None }
 
     val pow2: nat -> Tot nat
-    let rec pow2 n = match n with 0 -> 1 | _ -> 2 * pow2 (n - 1)
+    let rec pow2 n = match n with 
+        | 0 -> 1 | _ -> op_Multiply 2 (pow2 (n - 1))
 
     // X:List --> 2^X
-    val powerset: list 'a -> Tot (list (list 'a))
-    let rec powerset = function
+    val powerset: #a:Type -> list a -> Tot (list (list a))
+    let rec powerset #a = function
         | [] -> [[]]
         | x::xs -> List.Tot.collect (fun subset -> [subset; List.Tot.append [x] subset]) (powerset xs)
 
-    val powSetLemma1: l:(list 'a) -> 
+    val powSetLemma1: #a:Type -> l:(list a) ->
         Lemma 
             (requires True) 
-            (ensures (List.length (powerset l) <= pow2 (List.length l)))
+            (ensures (List.Tot.length (powerset l) <= pow2 (List.Tot.length l)))
             [SMTPat (powerset l)]
-    let rec powSetLemma1 l = 
+    let rec powSetLemma1 #a l = 
         match l with  
         | [] -> ()
         | hd::tl -> admit ()
 
     // A => C1,...,Cn where forall i in [1..n] : Ci => eps
-    val isEpsWeakGen: list string -> rule: Rule 'a 'b {Helpers.isPSeq rule.body} -> Tot bool
-    let isEpsWeakGen nonEpsNameList rule  =
-        match rule.body with PSeq(elements,_,_) ->
-            List.Tot.for_all 
-                (fun elem -> 
-                    match elem.rule with 
-                    | PRef(s,_) -> not (List.Tot.contains s.text nonEpsNameList) 
-                    | _ -> false 
-                ) elements
+    val isEpsWeakGen: #a:Type -> #b:Type -> list string -> rule0: rule a b {Helpers.isPSeq rule0.body} -> Tot bool
+    let isEpsWeakGen #a #b nonEpsNameList rule0 =
+        match rule0.body with 
+            | PSeq(elements,_,_) ->
+                List.Tot.for_all 
+                    (fun elem -> 
+                        match elem.rule with 
+                        | PRef(s,_) -> not (List.Tot.contains s.text nonEpsNameList) 
+                        | _ -> false 
+                    ) elements
 
-    val nonEpsGenHelper: list (rule: Rule 'a 'b {Helpers.isPSeq rule.body}) -> nonEpsGen: list string -> Tot (list string) (decreases %[List.length nonEpsGen])
-    let rec nonEpsGenHelper ruleList nonEpsGenNameList =
+    val nonEpsGenHelper: #a:eqtype -> #b:eqtype -> list (rule0: rule a b {Helpers.isPSeq rule0.body}) -> nonEpsGen: list string -> Tot (list string) (decreases %[List.Tot.length nonEpsGen])
+    let rec nonEpsGenHelper #a #b ruleList nonEpsGenNameList =
         let epsGen = 
             Helpers.removeDuplicates (
                 List.Tot.map Helpers.getLeftPart (
                     List.Tot.filter (isEpsWeakGen nonEpsGenNameList) 
                         ruleList)) in 
 
-        let (newNonEpsGenNameList: list string {List.length newNonEpsGenNameList <= List.length nonEpsGenNameList}) = 
+        let (newNonEpsGenNameList: list string {List.Tot.length newNonEpsGenNameList <= List.Tot.length nonEpsGenNameList}) = 
             Helpers.except epsGen nonEpsGenNameList in
         
-        if (List.length newNonEpsGenNameList = List.length nonEpsGenNameList)  // TODO: доказать: (длины листов равны => они ещё и поэлементно равны)
+        if (List.Tot.length newNonEpsGenNameList = List.Tot.length nonEpsGenNameList)  // TODO: доказать: (длины листов равны => они ещё и поэлементно равны)
         then nonEpsGenNameList
         else nonEpsGenHelper ruleList (newNonEpsGenNameList)
 
 
     // ruleList -> [Ai => eps]
-    val getEpsRuleNameList: list (rule: Rule 'a 'b {Helpers.isPSeq rule.body}) -> Tot (list string)
-    let getEpsRuleNameList ruleList =
+    val getEpsRuleNameList: #a:Type -> #b:Type -> list (rule0: rule a b {Helpers.isPSeq rule0.body}) -> Tot (list string)
+    let getEpsRuleNameList #a #b ruleList =
         let getEpsRuleName rule = if (Helpers.isEpsRule rule) then [rule.name.text] else [] in
         List.Tot.collect getEpsRuleName ruleList
 
     // ruleList -> [Ai =>* eps]
-    val getEpsGenRuleNameList: list (rule: Rule 'a 'b {Helpers.isPSeq rule.body}) -> Tot (list string) 
-    let getEpsGenRuleNameList ruleList =
+    val getEpsGenRuleNameList: #a:eqtype -> #b:eqtype -> list (rule0: rule a b {Helpers.isPSeq rule0.body}) -> Tot (list string) 
+    let getEpsGenRuleNameList #a #b ruleList =
         let allNonterm = Helpers.removeDuplicates (List.Tot.map Helpers.getLeftPart ruleList) in 
         let epsRuleList = getEpsRuleNameList ruleList in 
         let epsGenRuleList = Helpers.except (nonEpsGenHelper ruleList (Helpers.except epsRuleList allNonterm)) allNonterm in
         epsGenRuleList
 
 
-    val mapLemma: f:('a -> Tot 'b) -> l:list 'a -> 
+    val mapLemma: f:('a -> Tot 'b) -> l:list 'a -> //'
         Lemma 
             (requires True) 
-            (ensures (List.length (List.Tot.map f l) = (List.length l)))
+            (ensures (List.Tot.length (List.Tot.map f l) = (List.Tot.length l)))
             [SMTPat (List.Tot.map f l)]
     let rec mapLemma f l = 
         match l with  
@@ -76,12 +79,12 @@ module Yard.Core.Conversions.DeleteEpsRule
         | x::xs -> mapLemma f xs
 
 
-    val newRules: list string -> rule: Rule 'a 'b {Helpers.isPSeq rule.body} -> Tot (result: list (Rule 'a 'b) {List.length result <= pow2 (List.length (Helpers.getRightPartList rule))} )
-    let newRules epsGenNameList rule =
-        let epsRef = List.Tot.filter (fun term -> List.Tot.contains term epsGenNameList) (Helpers.getRightPartPRefList rule) in
+    val newRules: #a:Type -> #b:Type -> list string -> rule0: rule a b {Helpers.isPSeq rule0.body} -> Tot (result: list (rule a b) {List.Tot.length result <= pow2 (List.Tot.length (Helpers.getRightPartList rule0))} )
+    let newRules #a #b epsGenNameList rule0 =
+        let epsRef = List.Tot.filter (fun term -> List.Tot.contains term epsGenNameList) (Helpers.getRightPartPRefList rule0) in
 
-        let pList = Helpers.getRightPartList rule in
-        let pRefList = Helpers.getRightPartPRefList rule in
+        let pList = Helpers.getRightPartList rule0 in
+        let pRefList = Helpers.getRightPartPRefList rule0 in
         let nonEpsGeneratingTerms = List.Tot.filter (fun name -> not (List.Tot.contains name epsRef)) pList in
 
         let powRule = powerset pList in
@@ -92,27 +95,29 @@ module Yard.Core.Conversions.DeleteEpsRule
             List.Tot.map (fun powRule -> 
                     List.Tot.map (fun str ->
                         if List.Tot.contains str pRefList
-                        then TransformAux.createSimpleElem (PRef(new_Source0(str), None)) None
-                        else TransformAux.createSimpleElem (PToken(new_Source0(str))) None 
+                        then createSimpleElem (PRef(new_Source0(str), None)) None
+                        else createSimpleElem (PToken(new_Source0(str))) None 
                     ) powRule
                 ) powRulesTrue in
 
-        let ac,lbl = match rule.body with PSeq(e, a, l) -> a,l | _ -> None,None in
-        List.Tot.map (fun x -> {rule with body=PSeq(x, ac, lbl)}) packString
+
+        let ac,lbl = match rule0.body with | PSeq(e, a, l) -> a,l | _ -> None,None in
+        let tempPack x = {name = rule0.name; args = rule0.args; body=PSeq(x, ac, lbl); isStart = rule0.isStart; isPublic = rule0.isPublic; metaArgs = rule0.metaArgs} in
+        List.Tot.map tempPack packString
 
 
 
-    val isNotEpsRule: Rule 'a 'b -> Tot bool
-    let isNotEpsRule rule = not (Helpers.isEpsRule rule)
+    val isNotEpsRule: #a:Type -> #b:Type -> rule a b -> Tot bool
+    let isNotEpsRule #a #b rule = not (Helpers.isEpsRule rule)
 
-    val deleteEpsRule: 
-        list (rule: Rule 'a 'b {Helpers.isPSeq rule.body}) 
-        -> Tot (list (rule: (Rule 'a 'b){isNotEpsRule rule}))
-    let deleteEpsRule ruleList =
+    val deleteEpsRule: #a:eqtype -> #b:eqtype 
+        -> list (rule: rule a b {Helpers.isPSeq rule.body}) 
+        -> Tot (result: list (rule a b) {forall rule0. List.Tot.mem rule0 result ==> isNotEpsRule rule0})
+    let deleteEpsRule #a #b ruleList =
         let epsGenNameList = getEpsGenRuleNameList ruleList in
         let powRulesFlat 
             = List.Tot.collect (newRules epsGenNameList) ruleList in
-        Helpers.filter isNotEpsRule powRulesFlat 
+        List.Tot.filter isNotEpsRule powRulesFlat 
 
 
 // Bonus:
@@ -120,7 +125,7 @@ module Yard.Core.Conversions.DeleteEpsRule
 // TODO: List.isEmpty (getEpsRuleNameList ruleList) ==> List.isEmpty (getEpsGenRuleNameList ruleList) 
 
     // List.Tot.for_all isNotEpsRule result ==> List.isEmpty (getEpsRuleNameList ruleList)
-//    val epsGenLemma1: ruleList:list (Rule 'a 'b) -> 
+//    val epsGenLemma1: ruleList:list (rule a b) -> 
 //        Lemma 
 //            (requires (List.Tot.for_all isNotEpsRule ruleList))
 //            (ensures (List.isEmpty (getEpsRuleNameList ruleList)))
@@ -130,7 +135,7 @@ module Yard.Core.Conversions.DeleteEpsRule
 //        | hd::tl -> admit()
 
     // нет [A => eps] => нет [A =>* eps]
-//    val epsGenLemma2: ruleList:list (Rule 'a 'b) -> 
+//    val epsGenLemma2: ruleList:list (rule a b) -> 
 //        Lemma 
 //            (requires (List.isEmpty (getEpsRuleNameList ruleList)))
 //            (ensures (List.isEmpty (getEpsGenRuleNameList ruleList)))
@@ -167,7 +172,7 @@ module Yard.Core.Conversions.DeleteEpsRule
 //    assume val flattenListLemma: l:(list (list 'a)){is_Cons l} ->
 //        Lemma
 //            (requires (True)) 
-//            (ensures (List.Tot.length (List.Tot.flatten l) <= (List.length l) * (listMax (List.Tot.map (fun xs -> List.length xs) l) )))  
+//            (ensures (List.Tot.length (List.Tot.flatten l) <= (List.Tot.length l) * (listMax (List.Tot.map (fun xs -> List.Tot.length xs) l) )))  
 
     val le: nat -> nat -> Tot bool
     let le a b = a >= b 
@@ -198,25 +203,25 @@ module Yard.Core.Conversions.DeleteEpsRule
 
     //let lenRigthPart (rule: (Rule _ _) {Helpers.isPSeq rule.body && List.mem rule ruleList}
     let lenRigthPart (rule: (Rule _ _) {Helpers.isPSeq rule.body}) 
-        = List.length (Helpers.getRightPartList rule)  
+        = List.Tot.length (Helpers.getRightPartList rule)  
 
-    assume val maxLemma3: ruleList: list (rule: Rule 'a 'b {Helpers.isPSeq rule.body}) {is_Cons ruleList} ->
+    assume val maxLemma3: ruleList: list (rule: rule a b {Helpers.isPSeq rule.body}) {is_Cons ruleList} ->
         Lemma
             (requires (True)) 
             (ensures (forall rule. List.mem rule ruleList ==> (lenRigthPart rule) <= listMax (List.Tot.map lenRigthPart ruleList))) 
             [SMTPat (listMax (List.Tot.map lenRigthPart ruleList))]
 
-    //val deleteEpsRule: list (rule: Rule 'a 'b {Helpers.isPSeq rule.body}) -> Tot (result: list (rule: (Rule 'a 'b){isNotEpsRule rule}))
-    //val deleteEpsRule: ruleList: list (rule: Rule 'a 'b {Helpers.isPSeq rule.body}) {is_Cons ruleList} -> list (rule: (Rule 'a 'b) {Helpers.isPSeq rule.body})
-    //val deleteEpsRule: ruleList: list (rule: Rule 'a 'b {Helpers.isPSeq rule.body}){is_Cons ruleList} -> list (rule: (Rule 'a 'b) {Helpers.isPSeq rule.body})
+    //val deleteEpsRule: list (rule: rule a b {Helpers.isPSeq rule.body}) -> Tot (result: list (rule: (rule a b){isNotEpsRule rule}))
+    //val deleteEpsRule: ruleList: list (rule: rule a b {Helpers.isPSeq rule.body}) {is_Cons ruleList} -> list (rule: (rule a b) {Helpers.isPSeq rule.body})
+    //val deleteEpsRule: ruleList: list (rule: rule a b {Helpers.isPSeq rule.body}){is_Cons ruleList} -> list (rule: (rule a b) {Helpers.isPSeq rule.body})
     //let deleteEpsRule ruleList =
     //    let epsGenNameList = getEpsGenRuleNameList ruleList in
 
     //    let maxLenRigth = listMax (List.Tot.map lenRigthPart ruleList) in
     //    assert (forall rule. List.mem rule ruleList  ==> lenRigthPart rule <= maxLenRigth ); 
         //let amountPowRul (rule: (Rule _ _) {Helpers.isPSeq rule.body && List.mem rule ruleList} ): (res: nat { res <= pow2 maxLenRigth } ) 
-        //    = List.length (newRules epsGenNameList rule) in
-    //    assert (  forall rule. List.mem rule ruleList ==> List.length (newRules epsGenNameList rule) <= pow2 maxLenRigth ) ;
+        //    = List.Tot.length (newRules epsGenNameList rule) in
+    //    assert (  forall rule. List.mem rule ruleList ==> List.Tot.length (newRules epsGenNameList rule) <= pow2 maxLenRigth ) ;
     //    let powRulesFlat 
     //        = List.Tot.collect (newRules epsGenNameList) ruleList in
         //Helpers.filter isNotEpsRule powRulesFlat 
@@ -226,20 +231,20 @@ module Yard.Core.Conversions.DeleteEpsRule
 
 
 (*
-    val upperBound: ruleList: list (rule: Rule 'a 'b {Helpers.isPSeq rule.body}) {is_Cons ruleList} -> Tot nat 
+    val upperBound: ruleList: list (rule: rule a b {Helpers.isPSeq rule.body}) {is_Cons ruleList} -> Tot nat 
     let upperBound ruleList =
         let n = List.Tot.length ruleList in
-        let lenRigthPart (rule: Rule 'a 'b {Helpers.isPSeq rule.body}) : nat = List.Tot.length (Helpers.getRightPartList rule) in
+        let lenRigthPart (rule: rule a b {Helpers.isPSeq rule.body}) : nat = List.Tot.length (Helpers.getRightPartList rule) in
         let lens = List.Tot.map lenRigthPart ruleList in
-        if (List.length lens > 0) then n * (pow2 (max lens)) else 0
+        if (List.Tot.length lens > 0) then n * (pow2 (max lens)) else 0
 *)
 
 
 (*
-    val powSetLemma1: l:(list 'a) -> 
+    val powSetLemma1: l:(list 'a) -> //'
         Lemma 
             (requires True) 
-            (ensures (List.length l <= List.length (powerset l)))
+            (ensures (List.Tot.length l <= List.Tot.length (powerset l)))
     let rec powSetLemma1 l = 
         match l with  
         | [] -> ()
