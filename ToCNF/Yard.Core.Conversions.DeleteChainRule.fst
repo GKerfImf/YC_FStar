@@ -75,17 +75,12 @@ module Yard.Core.Conversions.DeleteChainRule
         let rightPart = match rule.body with | PSeq(elems,_,_) -> getTextPRef (List.Tot.hd elems).rule in
         (rule.name.text, rightPart)
     
-//TODO: del
-    val filter: #a:Type -> f:(a -> Tot bool) -> list a -> Tot (list (m: a{f m}))
-    let rec filter #a f l = match l with 
-        | [] -> []
-        | hd::tl -> if f hd then hd::filter f tl else filter f tl
 
     val findAllUnitPair: 
         #a:eqtype -> #b:eqtype
         -> list (rule: (rule a b) {Helpers.isPSeq rule.body}) -> Tot (list (string * list string))
-    let findAllUnitPair #a #a ruleList =
-        let unitRules = filter isUnitRule ruleList in
+    let findAllUnitPair #a #b ruleList =
+        let unitRules = Helpers.unliftDepType isUnitRule (List.Tot.filter isUnitRule ruleList) in
         let unitPairs = List.Tot.map splitUnitRule unitRules in
         let leftParts = Helpers.removeDuplicates (List.Tot.map fst unitPairs) in
         List.Tot.map (fun x -> (x, getChain (List.Tot.map snd (List.Tot.filter (fun y -> fst y = x) unitPairs)) unitPairs)) leftParts
@@ -106,15 +101,24 @@ module Yard.Core.Conversions.DeleteChainRule
         -> string * (list string) 
         -> Tot (list (rule0: (rule a b) {Helpers.isPSeq rule0.body}))
     let newRules #a #b ruleList unitPair =
-        let nonUnitRules = filter isNonUnitRule ruleList in
+        let nonUnitRules = Helpers.unliftDepType isNonUnitRule (List.Tot.filter isNonUnitRule ruleList) in
         let isRuleNameEq x rule0 = rule0.name.text = x in                               
         let rulesWithName x = List.Tot.filter (isRuleNameEq x) nonUnitRules in
         let tempRules = List.Tot.collect rulesWithName (snd unitPair) in 
         List.Tot.map (renameRule (fst unitPair)) tempRules
 
 
+    private val setStart: #a:eqtype -> #b:eqtype -> string  -> rule0: (rule a b) {Helpers.isPSeq rule0.body /\ isNonUnitRule rule0} -> Tot (res: (rule a b) {Helpers.isPSeq res.body /\ isNonUnitRule res})
+    private let setStart #a #b sNT rule0  = if (Helpers.getLeftPart rule0 = sNT) then ({rule0 with isStart = true}) else rule0
+
     val deleteChainRule: #a:eqtype -> #b:eqtype
-        ->  list (rule0: (rule a b) {Helpers.isPSeq rule0.body}) 
-        -> Tot (lst: list (rule0: (rule a b) {Helpers.isPSeq rule0.body}) {forall rule1. List.Tot.mem rule1 lst ==> isNonUnitRule rule1})
+        -> ruleList: list (rule0: (rule a b) {Helpers.isPSeq rule0.body}) { is_Cons (List.Tot.filter Helpers.isStartRule ruleList) } //~> { exists rule. rule in ruleList /\ rule.isStart }
+        -> Tot (lst: list (rule0: (rule a b) {Helpers.isPSeq rule0.body /\ isNonUnitRule rule0}))
     let deleteChainRule #a #b ruleList = 
-        List.Tot.filter isNonUnitRule (Helpers.removeDuplicates (ruleList @ List.Tot.collect (newRules ruleList) (findAllUnitPair ruleList)))
+        let startNonterm = (List.Tot.hd (List.Tot.filter Helpers.isStartRule ruleList)).name.text in
+        List.Tot.map (setStart startNonterm) (
+            Helpers.unliftDepType isNonUnitRule (
+                List.Tot.filter isNonUnitRule (
+                    Helpers.removeDuplicates (
+                        ruleList @ List.Tot.collect (newRules ruleList) (
+                            findAllUnitPair ruleList)))))

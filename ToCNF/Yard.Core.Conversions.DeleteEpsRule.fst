@@ -60,14 +60,14 @@ module Yard.Core.Conversions.DeleteEpsRule
         List.Tot.collect getEpsRuleName ruleList
 
     // ruleList -> [Ai =>* eps]
-    val getEpsGenRuleNameList: #a:eqtype -> #b:eqtype -> list (rule0: rule a b {Helpers.isPSeq rule0.body}) -> Tot (list string) 
+    val getEpsGenRuleNameList: #a:eqtype -> #b:eqtype -> list (rule0: (rule a b) {Helpers.isPSeq rule0.body}) -> Tot (list string) 
     let getEpsGenRuleNameList #a #b ruleList =
         let allNonterm = Helpers.removeDuplicates (List.Tot.map Helpers.getLeftPart ruleList) in 
         let epsRuleList = getEpsRuleNameList ruleList in 
         let epsGenRuleList = Helpers.except (nonEpsGenHelper ruleList (Helpers.except epsRuleList allNonterm)) allNonterm in
         epsGenRuleList
 
-
+//TODO: del, ListProp, map_lemma
     val mapLemma: f:('a -> Tot 'b) -> l:list 'a -> //'
         Lemma 
             (requires True) 
@@ -111,7 +111,7 @@ module Yard.Core.Conversions.DeleteEpsRule
     let isNotEpsRule #a #b rule = not (Helpers.isEpsRule rule)
 
     val deleteEpsRule: #a:eqtype -> #b:eqtype 
-        -> list (rule: rule a b {Helpers.isPSeq rule.body}) 
+        -> list (rule0: rule a b {Helpers.isPSeq rule0.body}) 
         -> Tot (result: list (rule a b) {forall rule0. List.Tot.mem rule0 result ==> isNotEpsRule rule0})
     let deleteEpsRule #a #b ruleList =
         let epsGenNameList = getEpsGenRuleNameList ruleList in
@@ -125,24 +125,26 @@ module Yard.Core.Conversions.DeleteEpsRule
 // TODO: List.isEmpty (getEpsRuleNameList ruleList) ==> List.isEmpty (getEpsGenRuleNameList ruleList) 
 
     // List.Tot.for_all isNotEpsRule result ==> List.isEmpty (getEpsRuleNameList ruleList)
-//    val epsGenLemma1: ruleList:list (rule a b) -> 
+//    val epsGenLemma1: #a:eqtype -> #b:eqtype 
+//        -> ruleList:list (rule a b) -> 
 //        Lemma 
-//            (requires (List.Tot.for_all isNotEpsRule ruleList))
-//            (ensures (List.isEmpty (getEpsRuleNameList ruleList)))
-//    let rec epsGenLemma1 ruleList = 
+//            (requires (ruleList: list (rule a b) {forall rule0. List.Tot.mem rule0 ruleList ==> isNotEpsRule rule0}))
+//            (ensures (List.Tot.isEmpty (getEpsRuleNameList ruleList)))
+//    let rec epsGenLemma1 #a #b ruleList = 
 //        match ruleList with  
 //        | [] -> ()
-//        | hd::tl -> admit()
+//        | hd::tl -> epsGenLemma1 tl
 
     // нет [A => eps] => нет [A =>* eps]
-//    val epsGenLemma2: ruleList:list (rule a b) -> 
+//    val epsGenLemma2: #a:eqtype -> #b:eqtype 
+//        -> ruleList:list (rule a b) -> 
 //        Lemma 
-//            (requires (List.isEmpty (getEpsRuleNameList ruleList)))
-//            (ensures (List.isEmpty (getEpsGenRuleNameList ruleList)))
-//    let rec epsGenLemma2 ruleList = 
+//            (requires (List.Tot.isEmpty (getEpsRuleNameList ruleList)))
+//            (ensures (List.Tot.isEmpty (getEpsGenRuleNameList ruleList)))
+//    let rec epsGenLemma2 #a #b ruleList = 
 //        match ruleList with  
 //        | [] -> ()
-//        | hd::tl -> admit()
+//        | hd::tl -> epsGenLemma2 tl
 
 
 

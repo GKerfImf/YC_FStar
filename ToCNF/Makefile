@@ -12,7 +12,7 @@
 VERFILES=\
 	IL.fst\
     Yard.Core.Conversions.Helpers.fst\
-    Yard.Core.Conversions.SplitLongRule.fst\
+    Yard.Core.Conversions.DeleteChainRule.fst\
     Main.fst
     
  
@@ -37,7 +37,7 @@ ver: $(VERFILES)
 extrToCNFOCaml: $(VERFILES)
 	$(FSTAR)  --explicit_deps --use_native_int --odir out --codegen OCaml $(LIB_FILES) $^
 	cp $(LIB)/ml/MkPrims.ml $(LIB)/ml/native_int/prims.ml $(LIB)/ml/FStar_IO.ml $(LIB)/ml/FStar_All.ml out
-	(cd out; ocamlc -o ToCNF.exe nums.cma MkPrims.ml prims.ml FStar_IO.ml FStar_All.ml FStar_List_Tot.ml IL.ml Yard_Core_Conversions_Helpers.ml Yard_Core_Conversions_SplitLongRule.ml Main.ml)
+	(cd out; ocamlc -o ToCNF.exe nums.cma MkPrims.ml prims.ml FStar_IO.ml FStar_All.ml FStar_List_Tot.ml IL.ml Yard_Core_Conversions_Helpers.ml Yard_Core_Conversions_DeleteChainRule.ml Main.ml)
 	./out/ToCNF.exe
 
 

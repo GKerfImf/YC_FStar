@@ -8,6 +8,6 @@ module Yard.Core.Conversions.ToCNF
         RenameTerm.renameTerm (
             DeleteUseless.deleteUseless (
                 DeleteChainRule.deleteChainRule (
-                 DeleteEpsRule.deleteEpsRule(
+					DeleteEpsRule.deleteEpsRule(
                         SplitLongRule.splitLongRule (
                             ruleList))))) 
