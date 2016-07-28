@@ -1,21 +1,18 @@
 module Yard.Core.Conversions.Helpers
     open IL
 
-    val isPToken: #a:Type -> #b:Type
-        -> production a b -> Tot bool
-    let isPToken #a #b prod = match prod with 
+    val isPToken: production 'a 'b -> Tot bool
+    let isPToken #a #b = function
         | PToken(_) -> true 
         | _ -> false
 
-    val isPRef: #a:Type -> #b:Type
-        -> production a b -> Tot bool
-    let isPRef #a #b prod = match prod with 
+    val isPRef: production 'a 'b -> Tot bool
+    let isPRef #a #b = function
         | PRef(_) -> true 
         | _ -> false
 
-    val isPSeq: #a:Type -> #b:Type
-        -> production a b -> Tot bool
-    let isPSeq #a #b prod = match prod with 
+    val isPSeq: production 'a 'b -> Tot bool
+    let isPSeq #a #b = function
         | PSeq(_) -> true 
         | _ -> false
 
@@ -68,12 +65,12 @@ module Yard.Core.Conversions.Helpers
         {name = new_Source0 nonTerm; args = []; body = PSeq(seq, None, None); isStart = b; isPublic = false; metaArgs = []}
 
     val simpleStartRule: #a:Type -> #b:Type
-        -> string -> list (elem a b) -> Tot (list (rule0: (rule a b) {Helpers.isPSeq rule0.body}))
-    let simpleStartRule #a #b nonTerm seq = [simpleRule nonTerm seq true]
+        -> string -> list (elem a b) -> Tot ( (rule0: (rule a b) {Helpers.isPSeq rule0.body}))
+    let simpleStartRule #a #b nonTerm seq = simpleRule nonTerm seq true
 
     val simpleNotStartRule: #a:Type -> #b:Type
-        -> string -> list (elem a b) -> Tot (list (rule0: (rule a b) {Helpers.isPSeq rule0.body}))
-    let simpleNotStartRule #a #b nonTerm seq = [simpleRule nonTerm seq false]
+        -> string -> list (elem a b) -> Tot ( (rule0: (rule a b) {Helpers.isPSeq rule0.body}))
+    let simpleNotStartRule #a #b nonTerm seq = simpleRule nonTerm seq false
     
 //------------------------------------------------
 
@@ -202,12 +199,20 @@ fail:
         -> f:(list (x: a {p x}) -> Tot (list (y: b {q y})))
         -> Tot (l1: (list a) {forall x. List.Tot.mem x l1 ==> p x} -> Tot (l2: (list b) {forall y. List.Tot.mem y l2 ==> q y}))
     let liftF1 a b p q f =  fun x -> lift (f (unlift p x))  
- 
+
+
     val liftF2:
+        a:eqtype -> b:eqtype -> p:(a -> Tot bool) -> q:(b -> Tot bool)
+        -> f:(list (x: a {p x}) -> Tot (list (y: b {q y})))
+        -> Tot (l1: (list a) {forall x. List.Tot.mem x l1 ==> p x} -> Tot (list (y: b {q y}))) //Tot (l2: (list b) {forall y. List.Tot.mem y l2 ==> q y}))
+    let liftF2 a b p q f =  fun x -> f (unlift p x)
+
+ 
+    val liftF3:
         #a:eqtype -> #p:(a -> Tot bool)
         -> f:(list (x: a {p x}) -> Tot (list bool))
         -> Tot (l1: (list a) {forall x. List.Tot.mem x l1 ==> p x} -> Tot (l2: (list bool)))
-    let liftF2 #a #p f =  liftF1 a bool p (fun x -> true) f  
+    let liftF3 #a #p f =  liftF1 a bool p (fun x -> true) f  
    
    
    
@@ -226,7 +231,7 @@ fail:
         -> ln2: list nat {forall n. List.Tot.mem n ln2 ==> p1 n && p2 n}
         -> Tot (list bool)
     let test6 ln1 ln2 =  
-        liftF2 (List.Tot.map f) ln1 @ liftF2 (List.Tot.map f) ln2
+        liftF3 (List.Tot.map f) ln1 @ liftF3 (List.Tot.map f) ln2
      
      
      

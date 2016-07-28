@@ -13,6 +13,7 @@ VERFILES=\
 	IL.fst\
     Yard.Core.Conversions.Helpers.fst\
     Yard.Core.Conversions.DeleteChainRule.fst\
+    Equ.fst\
     Main.fst
     
  
@@ -29,15 +30,17 @@ FSTAR = $(BIN)/fstar.exe
 
 
 
+#all: ver
 all: extrToCNFOCaml 
+
 
 ver: $(VERFILES)
 	$(FSTAR) --explicit_deps $(LIB_FILES) $^
 
 extrToCNFOCaml: $(VERFILES)
-	$(FSTAR)  --explicit_deps --use_native_int --odir out --codegen OCaml $(LIB_FILES) $^
+	$(FSTAR)  --z3timeout 10000 --explicit_deps --use_native_int --odir out --codegen OCaml $(LIB_FILES) $^
 	cp $(LIB)/ml/MkPrims.ml $(LIB)/ml/native_int/prims.ml $(LIB)/ml/FStar_IO.ml $(LIB)/ml/FStar_All.ml out
-	(cd out; ocamlc -o ToCNF.exe nums.cma MkPrims.ml prims.ml FStar_IO.ml FStar_All.ml FStar_List_Tot.ml IL.ml Yard_Core_Conversions_Helpers.ml Yard_Core_Conversions_DeleteChainRule.ml Main.ml)
+	(cd out; ocamlc -o ToCNF.exe nums.cma MkPrims.ml prims.ml FStar_IO.ml FStar_All.ml FStar_List_Tot.ml IL.ml Yard_Core_Conversions_Helpers.ml Yard_Core_Conversions_DeleteChainRule.ml Equ.ml Main.ml)
 	./out/ToCNF.exe
 
 

@@ -108,12 +108,14 @@ module Yard.Core.Conversions.DeleteChainRule
         List.Tot.map (renameRule (fst unitPair)) tempRules
 
 
-    private val setStart: #a:eqtype -> #b:eqtype -> string  -> rule0: (rule a b) {Helpers.isPSeq rule0.body /\ isNonUnitRule rule0} -> Tot (res: (rule a b) {Helpers.isPSeq res.body /\ isNonUnitRule res})
+    private val setStart: #a:eqtype -> #b:eqtype -> string  -> rule0: (rule a b) {Helpers.isPSeq rule0.body && isNonUnitRule rule0} -> Tot (res: (rule a b) {Helpers.isPSeq res.body && isNonUnitRule res})
     private let setStart #a #b sNT rule0  = if (Helpers.getLeftPart rule0 = sNT) then ({rule0 with isStart = true}) else rule0
+
+
 
     val deleteChainRule: #a:eqtype -> #b:eqtype
         -> ruleList: list (rule0: (rule a b) {Helpers.isPSeq rule0.body}) { is_Cons (List.Tot.filter Helpers.isStartRule ruleList) } //~> { exists rule. rule in ruleList /\ rule.isStart }
-        -> Tot (lst: list (rule0: (rule a b) {Helpers.isPSeq rule0.body /\ isNonUnitRule rule0}))
+        -> Tot (lst: list (rule0: (rule a b) {Helpers.isPSeq rule0.body && isNonUnitRule rule0}))
     let deleteChainRule #a #b ruleList = 
         let startNonterm = (List.Tot.hd (List.Tot.filter Helpers.isStartRule ruleList)).name.text in
         List.Tot.map (setStart startNonterm) (
