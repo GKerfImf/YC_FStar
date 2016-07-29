@@ -1,7 +1,7 @@
 module Main
 	open FStar.IO
 	open IL
-	open Equ
+	//open Equ
 	open Yard.Core.Conversions
 
 
@@ -32,35 +32,12 @@ module Main
 
 //TODO: assume val isWellFormed: list (rule 'a 'b) -> Tot ( list ( rule0: (rule source source) {Helpers.isPSeq rule0.body} ) )
 
-//TODO: move to Printer	
-	let rec concat l = match l with | [] -> "" | x::xs -> x ^ " " ^ concat xs 
-
-	let printrule rule =
-
-	    let getText = function 
-	    	| PToken(s) | PRef (s,_) -> s.text
-	        | _ -> "" in
-
-        let printruleBody = function 
-            | PSeq (ruleSeq, _, _) -> ruleSeq |> List.Tot.map (fun x -> "(" ^ getText x.rule ^ ")")  |> concat
-            | _ -> "" in 
-
-        let st = if rule.isStart then "*" else "" in 
-
-		st ^ rule.name.text ^ " --> " ^ printruleBody rule.body
-
-	val printListRule: list (rule 'a 'b) -> string
-	let rec printListRule #a #b = function 
-		| [] -> "" 
-		| hd::tl -> printrule hd  ^ "\n" ^ printListRule tl
-
-
     let main =
-        print_string "Hello, universes!\n\n";
+        print_string "Hello, universes!\n\n"
 
-        print_string (Equ.main ^ "\n")
+        //print_string (Equ.main ^ "\n")
 
-		//print_string ("\n" ^ printListRule (Helpers.lift testForDeleteChainRule) ^ "\n");
+		//print_string ("\n" ^ Printer.printListRule (Helpers.lift testForDeleteChainRule) ^ "\n")
 		//print_string ("\n" ^ printListRule2 (SplitLongRule.splitLongRule testForSplitLongRule) ^ "\n")
 		//print_string ("\n" ^ printListRule2 (DeleteEpsRule.deleteEpsRule testForDeleteEpsRule) ^ "\n")
 		//print_string ("\n" ^ printListRule (Helpers.lift (DeleteChainRule.deleteChainRule testForDeleteChainRule)) ^ "\n")

@@ -40,10 +40,10 @@ module Yard.Core.Conversions.SplitLongRule
       | hd::tl -> append_SingletonL tl elems2   
 
     val appendShort: #a:eqtype -> #b:eqtype
-        -> acc: shortRuleList a b
         -> item: rule a b {isRightPartLengthLE2 item}
+        -> acc: shortRuleList a b
         -> Tot (shortRuleList a b)
-    let appendShort #a #b acc item = List.Tot.append acc [item]
+    let appendShort #a #b item acc = List.Tot.append [item] acc 
 //---------------------------------------------------------------------------------------------------
 
     val newSource: int -> source -> Tot source 
@@ -89,9 +89,9 @@ module Yard.Core.Conversions.SplitLongRule
             //assert (List.Tot.length changedRule = (List.Tot.length revElements) - 1);
             let ac,lbl = match rule.body with | PSeq(e, a, l) -> a,l | _ -> None,None in
             //assert (Helpers.getRightPartLength tempRule < Helpers.getRightPartLength rule);
-            cutRule (appendShort resultRuleList newRule) ({ rule with body = PSeq(changedRule, ac,lbl) } ) 
+            cutRule (appendShort newRule resultRuleList) ({ rule with body = PSeq(changedRule, ac,lbl) } ) 
         else
-            appendShort resultRuleList rule //({ rule with name = newSource (List.Tot.length resultRuleList) rule.name})    
+            appendShort rule resultRuleList //({ rule with name = newSource (List.Tot.length resultRuleList) rule.name})    
 
 //--------------------------------------------------------
 

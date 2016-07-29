@@ -110,7 +110,8 @@ module Yard.Core.Conversions.DeleteEpsRule
     val isNotEpsRule: #a:Type -> #b:Type -> rule a b -> Tot bool
     let isNotEpsRule #a #b rule = not (Helpers.isEpsRule rule)
 
-    val deleteEpsRule: #a:eqtype -> #b:eqtype 
+
+(*    val deleteEpsRule: #a:eqtype -> #b:eqtype 
         -> list (rule0: rule a b {Helpers.isPSeq rule0.body}) 
         -> Tot (result: list (rule a b) {forall rule0. List.Tot.mem rule0 result ==> isNotEpsRule rule0})
     let deleteEpsRule #a #b ruleList =
@@ -118,6 +119,35 @@ module Yard.Core.Conversions.DeleteEpsRule
         let powRulesFlat 
             = List.Tot.collect (newRules epsGenNameList) ruleList in
         List.Tot.filter isNotEpsRule powRulesFlat 
+*)
+
+    val max: list 'a -> Tot 'a 
+    let max l = 0
+
+    val deleteEpsRule: #a:eqtype -> #b:eqtype 
+        -> list (rule0: rule a b {Helpers.isPSeq rule0.body}) 
+        -> Tot (result: list (rule a b) {forall rule0. List.Tot.mem rule0 result ==> isNotEpsRule rule0})
+
+    let deleteEpsRule #a #b ruleList =
+
+        let epsGenNameList = getEpsGenRuleNameList ruleList in
+
+
+
+
+        let powRulesFlat 
+            = List.Tot.collect (newRules epsGenNameList) ruleList in
+
+
+        
+
+        assume (forall l x. List.Tot.mem x l ==> x <= max l);
+
+        assume (List.Tot.length powRulesFlat <= 100) ;
+
+        List.Tot.filter isNotEpsRule powRulesFlat 
+
+
 
 
 // Bonus:
