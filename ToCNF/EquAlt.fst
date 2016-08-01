@@ -1,7 +1,10 @@
-module Equ
+module EquAlt
 	open FStar.IO
 	open IL
 	open Yard.Core.Conversions
+
+
+
 
 
 	type sentence (patt:eqtype) (expr:eqtype) = terms: list (production patt expr){forall prod. List.Tot.mem prod terms ==> Helpers.isPToken prod}
@@ -13,18 +16,78 @@ module Equ
          production 'a 'b -> Tot (elem 'a 'b)
     let create arule = {omit=false; binding=None; checker=None; rule = arule}
 
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+    val start_rule_old_cbs: production source source
+    let start_rule_old_cbs = PRef (new_Source0 "S", None)
 
-    val termCbs: list (production source source)
-    let termCbs = [PToken (new_Source0 "("); PToken (new_Source0 ")")]
+    val terminal_old_cbs: list (production source source)
+    let terminal_old_cbs = [PToken (new_Source0 "("); PToken (new_Source0 ")")]
 
-    val nonTermCbs: list (production source source)
-    let nonTermCbs = [PRef (new_Source0 "S", None)]
+    val non_terminal_old_cbs: list (production source source)
+    let non_terminal_old_cbs = [PRef (new_Source0 "S", None)]
 
-	val cbs: list (rule0: (rule source source) {Helpers.isPSeq rule0.body}) 
-	let cbs = [Helpers.simpleStartRule "S" (List.Tot.map create [PToken (new_Source0 "("); PRef (new_Source0 "S", None); PToken (new_Source0 ")")]);
+    val alphabet_old_cbs: list (production source source)
+    let alphabet_old_cbs = terminal_old_cbs @ non_terminal_old_cbs
+
+	val old_cbs: list (rule source source)
+	let old_cbs = [Helpers.simpleStartRule "S" (List.Tot.map create [PToken (new_Source0 "("); PRef (new_Source0 "S", None); PToken (new_Source0 ")")]);
 	    Helpers.simpleNotStartRule "S" (List.Tot.map create [PRef (new_Source0 "S", None); PRef (new_Source0 "S", None)]);
 	    Helpers.simpleNotStartRule "S" (List.Tot.map create [])]
+
+
+
+    val start_rule_new_cbs: production source source
+    let start_rule_new_cbs = PRef (new_Source0 "S", None)
+
+    val terminal_new_cbs: list (production source source)
+    let terminal_new_cbs = [PToken (new_Source0 "("); PToken (new_Source0 ")")]
+
+    val non_terminal_new_cbs: list (production source source)
+    let non_terminal_new_cbs = [PRef (new_Source0 "S", None); PRef (new_Source0 "S0", None)]
+
+    val alphabet_new_cbs: list (production source source)
+    let alphabet_new_cbs = terminal_new_cbs @ non_terminal_new_cbs
+
+	val new_cbs: list (rule source source) 
+	let new_cbs = [Helpers.simpleStartRule "S" (List.Tot.map create [PToken (new_Source0 "("); PRef (new_Source0 "S0", None)]);
+	    Helpers.simpleNotStartRule "S0" (List.Tot.map create [PRef (new_Source0 "S", None); PToken (new_Source0 ")")]);
+	    Helpers.simpleNotStartRule "S" (List.Tot.map create [PRef (new_Source0 "S", None); PRef (new_Source0 "S", None)]);
+	    Helpers.simpleNotStartRule "S" (List.Tot.map create [])]
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+	assume val is_rule: #a:eqtype -> #b:eqtype -> g: list (rule a b) -> left: production a b -> rigth: list (production a b) -> Tot bool
+
+	//type rule_type (#a:eqtype) (#b:eqtype) (g: list (rule a b)) (left: production a b) (rigth: list (production a b)) = True
+
+
+	type derives (#a:eqtype) (#b:eqtype) (g: list (rule a b)) (old_sf: sententialForm a b) = 
+		new_sf: (sententialForm a b) {
+			(old_sf = new_sf) \/ 
+
+			(exists sf1 sf2 left rigth. 
+				is_rule g left rigth 
+				/\ sf1 @ [left] @ sf2 = old_sf 
+				/\ sf1 @ rigth @ sf2 = new_sf 
+			)
+		}
+
+
+	type derive (#a:eqtype) (#b:eqtype) (g: list (rule a b)) (old_sf: sententialForm a b) = //(new_sf: sententialForm a b) =
+		| DerivesRefl: sf1: sententialForm a b -> sf2: sententialForm a b {sf1 = sf2} -> derive g 
+		| DerivesStep: .. -> .. -> derive g
+
+
+
+(*
+	type derives (#a:eqtype) (#b:eqtype) (g: list (rule a b)) (old_sf: sententialForm a b) (new_sf: sententialForm a b) = 
+		| DerivesRefl: forall (s: sententialForm a b). derives g s
+		| DerivesStep: forall s1 s2 s3 left rigth. derives g s1 (s2 @ [left] @ s3) -> rule_type g left rigth -> derives g s1 (s2 @ rigth @ s3)
+*)
+
+
 
 
 (*
@@ -243,7 +306,7 @@ module Equ
 	let rec nth #a l n = match l with
 		| hd::tl -> if n = 0 then hd else nth tl (n - 1)
 
-
+(*
 
     val lemma0: 
 		x: language source source (Helpers.lift cbs)
@@ -297,12 +360,12 @@ module Equ
 
 
 
-
+*)
 
 
 
 	let main = 
-		"> " ^ (Printer.printListRule (Helpers.lift cbs)) ^ "\n\n" ^ (Printer.printListRule (SplitLongRule.splitLongRule cbs))
+		"> " ^ (Printer.printListRule old_cbs) ^ "\n\n" ^ (Printer.printListRule new_cbs)
 
  	
 (*

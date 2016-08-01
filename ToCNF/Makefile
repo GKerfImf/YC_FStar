@@ -11,13 +11,20 @@
     Equ.fst\
     Main.fst
 
-VERFILES=\
+
+#VERFILES=\
 	IL.fst\
     Yard.Core.Conversions.Helpers.fst\
     Yard.Core.Conversions.DeleteEpsRule.fst\
     Printer.fst\
     Main.fst
-    
+
+VERFILES=\
+	IL.fst\
+    Yard.Core.Conversions.Helpers.fst\
+    Printer.fst\
+    EquAlt.fst\
+    Main.fst    
  
 LIB_FILES = FStar.Ghost.fst FStar.FunctionalExtensionality.fst FStar.PredicateExtensionality.fst\
     FStar.TSet.fst FStar.Set.fst FStar.Heap.fst FStar.ST.fst FStar.All.fst FStar.Float.fsti FStar.IO.fsti\
@@ -42,7 +49,7 @@ ver: $(VERFILES)
 extrToCNFOCaml: $(VERFILES)
 	$(FSTAR) --explicit_deps --use_native_int --odir out --codegen OCaml $(LIB_FILES) $^
 	cp $(LIB)/ml/MkPrims.ml $(LIB)/ml/native_int/prims.ml $(LIB)/ml/FStar_IO.ml $(LIB)/ml/FStar_All.ml out
-	(cd out; ocamlc -o ToCNF.exe nums.cma MkPrims.ml prims.ml FStar_IO.ml FStar_All.ml FStar_List_Tot.ml IL.ml Yard_Core_Conversions_Helpers.ml Yard_Core_Conversions_SplitLongRule.ml Printer.ml Equ.ml Main.ml)
+	(cd out; ocamlc -o ToCNF.exe nums.cma MkPrims.ml prims.ml FStar_IO.ml FStar_All.ml FStar_List_Tot.ml IL.ml Yard_Core_Conversions_Helpers.ml Yard_Core_Conversions_SplitLongRule.ml Printer.ml EquAlt.ml Main.ml)
 	./out/ToCNF.exe
 
 

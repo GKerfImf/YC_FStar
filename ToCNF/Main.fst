@@ -33,9 +33,9 @@ module Main
 //TODO: assume val isWellFormed: list (rule 'a 'b) -> Tot ( list ( rule0: (rule source source) {Helpers.isPSeq rule0.body} ) )
 
     let main =
-        print_string "Hello, universes!\n\n"
+        print_string "Hello, universes!\n\n" ;
 
-        //print_string (Equ.main ^ "\n")
+        print_string (EquAlt.main ^ "\n")
 
 		//print_string ("\n" ^ Printer.printListRule (Helpers.lift testForDeleteChainRule) ^ "\n")
 		//print_string ("\n" ^ printListRule2 (SplitLongRule.splitLongRule testForSplitLongRule) ^ "\n")
