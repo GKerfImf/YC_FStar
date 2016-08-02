@@ -18,6 +18,8 @@ module EquAlt
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+	assume val start_symbol: #a:eqtype -> #b:eqtype -> list (rule a b) -> Tot (production a b)
+
     val start_rule_old_cbs: production source source
     let start_rule_old_cbs = PRef (new_Source0 "S", None)
 
@@ -60,10 +62,11 @@ module EquAlt
 
 	assume val is_rule: #a:eqtype -> #b:eqtype -> g: list (rule a b) -> left: production a b -> rigth: list (production a b) -> Tot bool
 
-	//type rule_type (#a:eqtype) (#b:eqtype) (g: list (rule a b)) (left: production a b) (rigth: list (production a b)) = True
+	type rules (#a:eqtype) (#b:eqtype) (g: list (rule a b)) = 
+		| Rules: left: production a b -> rigth: list (production a b) -> rules g
 
 
-	type derives (#a:eqtype) (#b:eqtype) (g: list (rule a b)) (old_sf: sententialForm a b) = 
+	type derive (#a:eqtype) (#b:eqtype) (g: list (rule a b)) (old_sf: sententialForm a b) = 
 		new_sf: (sententialForm a b) {
 			(old_sf = new_sf) \/ 
 
@@ -75,11 +78,33 @@ module EquAlt
 		}
 
 
-	type derive (#a:eqtype) (#b:eqtype) (g: list (rule a b)) (old_sf: sententialForm a b) = //(new_sf: sententialForm a b) =
-		| DerivesRefl: sf1: sententialForm a b -> sf2: sententialForm a b {sf1 = sf2} -> derive g 
-		| DerivesStep: .. -> .. -> derive g
+	type derives (#a:eqtype) (#b:eqtype) (g: list (rule a b)) (old_sf: sententialForm a b) (new_sf: sententialForm a b) =
+		| DerivesRefl: 
+			sf1: sententialForm a b {sf1 = old_sf} 
+			-> sf2: sententialForm a b {sf2 = new_sf /\ sf1 = sf2} 
+			-> derives g old_sf new_sf
+		| DerivesStep: 
+			left: production a b 
+			-> rigth: list (production a b)
+			-> sf1: sententialForm a b
+			-> sf2: sententialForm a b {sf1 @ rigth @ sf2 = new_sf }
+			-> derives g old_sf (sf1 @ [left] @ sf2)
+			-> derives g old_sf new_sf
 
 
+	val d1: sententialForm source source
+	let d1 = [PRef (new_Source0 "S", None)]
+
+	//val d2: lderType source source (Helpers.lift cbs) d1
+	val d2: sententialForm source source
+	let d2 = [PRef (new_Source0 "S", None); PRef (new_Source0 "S", None)]
+
+
+	val d12: derives old_cbs d1 d2
+	let d12 = DerivesStep (PRef (new_Source0 "S", None)) ([PRef (new_Source0 "S", None); PRef (new_Source0 "S", None)]) [] [] (DerivesRefl d1 d1)
+
+
+	type generates (#a:eqtype) (#b:eqtype) (g: list (rule a b)) = sf: sententialForm a b {derives g [start_symbol g] sf} 
 
 (*
 	type derives (#a:eqtype) (#b:eqtype) (g: list (rule a b)) (old_sf: sententialForm a b) (new_sf: sententialForm a b) = 
@@ -188,12 +213,9 @@ module EquAlt
 
 
 
-	val d1: sententialForm source source
-	let d1 = [PRef (new_Source0 "S", None)]
 
-	//val d2: lderType source source (Helpers.lift cbs) d1
-	val d2: sententialForm source source
-	let d2 = [PRef (new_Source0 "S", None); PRef (new_Source0 "S", None)]
+
+
 	
 	//val d3: lderType source source (Helpers.lift cbs) d2
 	val d3: sententialForm source source
