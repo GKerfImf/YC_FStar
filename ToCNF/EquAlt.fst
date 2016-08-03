@@ -4,9 +4,6 @@ module EquAlt
 	open Yard.Core.Conversions
 
 
-
-
-
 	type sentence (patt:eqtype) (expr:eqtype) = terms: list (production patt expr){forall prod. List.Tot.mem prod terms ==> Helpers.isPToken prod}
 	type sententialForm (patt:Type) (expr:Type) = list (production patt expr)
 
@@ -18,309 +15,76 @@ module EquAlt
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-	assume val start_symbol: #a:eqtype -> #b:eqtype -> list (rule a b) -> Tot (production a b)
+    val start_symbol_old_cbs: production source source
+    let start_symbol_old_cbs = PRef (new_Source0 "S", None)
 
-    val start_rule_old_cbs: production source source
-    let start_rule_old_cbs = PRef (new_Source0 "S", None)
-
-    val terminal_old_cbs: list (production source source)
-    let terminal_old_cbs = [PToken (new_Source0 "("); PToken (new_Source0 ")")]
-
-    val non_terminal_old_cbs: list (production source source)
-    let non_terminal_old_cbs = [PRef (new_Source0 "S", None)]
-
-    val alphabet_old_cbs: list (production source source)
-    let alphabet_old_cbs = terminal_old_cbs @ non_terminal_old_cbs
-
-	val old_cbs: list (rule source source)
+	val old_cbs: list ( rule0: (rule source source))
 	let old_cbs = [Helpers.simpleStartRule "S" (List.Tot.map create [PToken (new_Source0 "("); PRef (new_Source0 "S", None); PToken (new_Source0 ")")]);
 	    Helpers.simpleNotStartRule "S" (List.Tot.map create [PRef (new_Source0 "S", None); PRef (new_Source0 "S", None)]);
 	    Helpers.simpleNotStartRule "S" (List.Tot.map create [])]
 
 
-
-    val start_rule_new_cbs: production source source
-    let start_rule_new_cbs = PRef (new_Source0 "S", None)
-
-    val terminal_new_cbs: list (production source source)
-    let terminal_new_cbs = [PToken (new_Source0 "("); PToken (new_Source0 ")")]
-
-    val non_terminal_new_cbs: list (production source source)
-    let non_terminal_new_cbs = [PRef (new_Source0 "S", None); PRef (new_Source0 "S0", None)]
-
-    val alphabet_new_cbs: list (production source source)
-    let alphabet_new_cbs = terminal_new_cbs @ non_terminal_new_cbs
+    val start_symbol_new_cbs: production source source
+    let start_symbol_new_cbs = PRef (new_Source0 "S", None)
 
 	val new_cbs: list (rule source source) 
-	let new_cbs = [Helpers.simpleStartRule "S" (List.Tot.map create [PToken (new_Source0 "("); PRef (new_Source0 "S0", None)]);
-	    Helpers.simpleNotStartRule "S0" (List.Tot.map create [PRef (new_Source0 "S", None); PToken (new_Source0 ")")]);
-	    Helpers.simpleNotStartRule "S" (List.Tot.map create [PRef (new_Source0 "S", None); PRef (new_Source0 "S", None)]);
-	    Helpers.simpleNotStartRule "S" (List.Tot.map create [])]
+	let new_cbs = SplitLongRule.splitLongRule old_cbs
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+	type rule_in (#a:eqtype) (#b:eqtype) (g: list (rule a b)) = r : (rule a b) {exists r2. List.Tot.mem r2 g /\ r2 = r} 
 
-	assume val is_rule: #a:eqtype -> #b:eqtype -> g: list (rule a b) -> left: production a b -> rigth: list (production a b) -> Tot bool
-
-	type rules (#a:eqtype) (#b:eqtype) (g: list (rule a b)) = 
-		| Rules: left: production a b -> rigth: list (production a b) -> rules g
+	val start_symbol: #a:eqtype -> #b:eqtype -> list (rule a b) -> Tot (production a b)
+	let start_symbol #a #b g = PRef (new_Source0 "S", None)
 
 
-	type derive (#a:eqtype) (#b:eqtype) (g: list (rule a b)) (old_sf: sententialForm a b) = 
-		new_sf: (sententialForm a b) {
-			(old_sf = new_sf) \/ 
+	val getProds: #a:eqtype -> #b:eqtype -> rule a b -> Tot (list (production a b))
+	let getProds #a #b rule = match rule.body with
+		| PSeq(els,_,_) -> List.Tot.map (fun elem -> elem.rule) els
+		| _ -> []
 
-			(exists sf1 sf2 left rigth. 
-				is_rule g left rigth 
-				/\ sf1 @ [left] @ sf2 = old_sf 
-				/\ sf1 @ rigth @ sf2 = new_sf 
-			)
-		}
+	val left: #a:eqtype -> #b:eqtype -> rule a b -> Tot (production a b)
+	let left #a #b rule = PRef (rule.name, None) 
+
+	val rigth: #a:eqtype -> #b:eqtype -> r: rule a b -> Tot (list (production a b))
+	let rigth #a #b rule = getProds rule 
 
 
 	type derives (#a:eqtype) (#b:eqtype) (g: list (rule a b)) (old_sf: sententialForm a b) (new_sf: sententialForm a b) =
 		| DerivesRefl: 
-			sf1: sententialForm a b {sf1 = old_sf} 
-			-> sf2: sententialForm a b {sf2 = new_sf /\ sf1 = sf2} 
+			   sf1: sententialForm a b { sf1 = old_sf /\ sf1 = new_sf }
 			-> derives g old_sf new_sf
 		| DerivesStep: 
-			left: production a b 
-			-> rigth: list (production a b)
-			-> sf1: sententialForm a b
-			-> sf2: sententialForm a b {sf1 @ rigth @ sf2 = new_sf }
-			-> derives g old_sf (sf1 @ [left] @ sf2)
+			   sf1: sententialForm a b
+			-> sf2: sententialForm a b 
+			-> r: (rule_in g) {sf1 @ (rigth r) @ sf2 = new_sf }
+			-> derives g old_sf (sf1 @ [left r] @ sf2)
 			-> derives g old_sf new_sf
 
 
-	val d1: sententialForm source source
-	let d1 = [PRef (new_Source0 "S", None)]
 
-	//val d2: lderType source source (Helpers.lift cbs) d1
+	//val d1: sententialForm source source
+	//let d1 = [PRef (new_Source0 "S", None)]
+
 	val d2: sententialForm source source
 	let d2 = [PRef (new_Source0 "S", None); PRef (new_Source0 "S", None)]
-
-
-	val d12: derives old_cbs d1 d2
-	let d12 = DerivesStep (PRef (new_Source0 "S", None)) ([PRef (new_Source0 "S", None); PRef (new_Source0 "S", None)]) [] [] (DerivesRefl d1 d1)
-
-
-	type generates (#a:eqtype) (#b:eqtype) (g: list (rule a b)) = sf: sententialForm a b {derives g [start_symbol g] sf} 
-
-(*
-	type derives (#a:eqtype) (#b:eqtype) (g: list (rule a b)) (old_sf: sententialForm a b) (new_sf: sententialForm a b) = 
-		| DerivesRefl: forall (s: sententialForm a b). derives g s
-		| DerivesStep: forall s1 s2 s3 left rigth. derives g s1 (s2 @ [left] @ s3) -> rule_type g left rigth -> derives g s1 (s2 @ rigth @ s3)
-*)
-
-
-
-
-(*
-	val testRule1: rule0: (rule source source) {Helpers.isPSeq rule0.body}
-	let testRule1 = Helpers.simpleNotStartRule "S" (List.Tot.map create [PToken (new_Source0 "("); PRef (new_Source0 "S", None); PToken (new_Source0 ")")])
-
-	val testRule2: rule0: (rule source source) {Helpers.isPSeq rule0.body}
-	let testRule2 = Helpers.simpleNotStartRule "S" (List.Tot.map create [PRef (new_Source0 "S", None); PRef (new_Source0 "S", None)])
-
-	val testRule3: rule0: (rule source source) {Helpers.isPSeq rule0.body}
-	let testRule3 = Helpers.simpleNotStartRule "S" (List.Tot.map create [])
-*)
-
-
-	val replace: #a:eqtype -> #b:eqtype -> production a b -> list (production a b) -> sententialForm a b -> Tot (sententialForm a b)
-	let rec replace #a #b lp rp sf = 
-		match sf with
-		| [] -> []
-		| hd::tl -> 
-			if Helpers.isPRef hd 
-			then if hd = lp then rp @ tl else sf
-			else hd :: replace lp rp tl 
-
-	val getProds: #a:eqtype -> #b:eqtype -> rule a b -> Tot (list (production a b))
-	let getProds #a #b rule = 
-		match rule.body with
-		| PSeq(els,_,_) -> List.Tot.map (fun elem -> elem.rule) els
-		| _ -> []
-
-
-(*
-//hz
-	val getF: #a:eqtype -> #b:eqtype -> rule a b -> Tot (sententialForm a b -> Tot (sententialForm a b))
-	let getF #a #b rule = 
-		let (lp: production a b ) = PRef (rule.name, None) in
-		let (rp: list (production a b) ) = getProds rule in
-		fun sf -> replace lp rp sf
-
-
-	val rewrite: #a:eqtype -> #b:eqtype -> sententialForm a b -> rule a b -> Tot (sententialForm a b)
-	let rewrite #a #b sfl rule  = (getF rule) sfl
-*)
-			     
-	val rewrite: #a:eqtype -> #b:eqtype -> sententialForm a b -> rule a b -> Tot (sententialForm a b)
-	let rewrite #a #b sfl rule = 
-		let lp: production a b  = PRef (rule.name, None) in
-		let rp: list (production a b) = getProds rule in
-		replace lp rp sfl
-
-
-	val lderives: a:eqtype -> b:eqtype -> ruleList: list (rule a b) -> oldSF: sententialForm a b -> newSF: sententialForm a b -> Tot bool
-	let lderives a b rl oldSF newSF =
-		let temp = List.Tot.map (rewrite oldSF) rl in
-		List.Tot.existsb (fun sf -> sf = newSF) temp
-
-
-	val lderivesSeq: a:eqtype -> b:eqtype -> ruleList: list (rule a b) -> list (sententialForm a b) -> Tot bool
-	let rec lderivesSeq a b rl listSF =
-		match listSF with 
-		| h1::h2::tl -> if lderives a b rl h1 h2 then lderivesSeq a b rl (h2::tl) else false
-		| _ -> true
-
-
-	//type lderType (a: eqtype) (b: eqtype) (ruleList: list (rule a b)) (oldSF: sententialForm a b) = newSF: (sententialForm a b) {exists rule. (List.Tot.mem rule ruleList /\ rewrite oldSF rule = newSF)}
-	type lderType (a: eqtype) (b: eqtype) (ruleList: list (rule a b)) (oldSF: sententialForm a b) = newSF: (sententialForm a b) {lderives a b ruleList oldSF newSF}
-	type lderSeqType (a: eqtype) (b: eqtype) (ruleList: list (rule a b)) = listSF: list (sententialForm a b) {lderivesSeq a b ruleList listSF}
-
-
-	val getStartNonterm: #a:eqtype -> #b:eqtype -> list (rule a b) -> Tot (sententialForm a b)
-	let getStartNonterm #a #b rl = 
-		let st = List.Tot.filter (fun rule -> rule.isStart) rl in
-		if is_Cons st then [PRef((List.Tot.hd st).name, None)] else [PRef (new_Source0 "S", None)]
-
-
-	val listLast: #a:Type -> l: list a {is_Cons l} -> Tot a
-	let rec listLast #a l = 
-		match l with 
-		| h1::h2::tl -> listLast (h2::tl)
-		| hd::tl -> hd
-
-
-
-
-(*
-//Ok
-	val str1: sententialForm source source
-	let str1 = [PRef (new_Source0 "S", None)]
-
-	val str11: lderType source source (Helpers.lift cbs) str1
-	let str11 = [PToken (new_Source0 "("); PRef (new_Source0 "S", None); PToken (new_Source0 ")")]
-
-	val str12: lderType source source (Helpers.lift cbs) str1
-	let str12 = [PRef (new_Source0 "S", None); PRef (new_Source0 "S", None)]
-
-	val str13: lderType source source (Helpers.lift cbs) str1
-	let str13 = []
-*)
-
-
-
-
-
-
 	
-	//val d3: lderType source source (Helpers.lift cbs) d2
 	val d3: sententialForm source source
 	let d3 = [PToken (new_Source0 "("); PRef (new_Source0 "S", None); PToken (new_Source0 ")"); PRef (new_Source0 "S", None)]
 	
-	//val d4: lderType source source (Helpers.lift cbs) d3
 	val d4: sententialForm source source
 	let d4 = [PToken (new_Source0 "("); PToken (new_Source0 ")"); PRef (new_Source0 "S", None)]
 	
-	//val d5: lderType source source (Helpers.lift cbs) d4
 	val d5: sententialForm source source
 	let d5 = [PToken (new_Source0 "("); PToken (new_Source0 ")"); PToken (new_Source0 "("); PRef (new_Source0 "S", None); PToken (new_Source0 ")")]
 	
-	//val d6: lderType source source (Helpers.lift cbs) d5
 	val d6: sententialForm source source
 	let d6 = [PToken (new_Source0 "("); PToken (new_Source0 ")"); PToken (new_Source0 "("); PToken (new_Source0 "("); PRef (new_Source0 "S", None); PToken (new_Source0 ")"); PToken (new_Source0 ")")]
 	
-	//val d7: lderType source source (Helpers.lift cbs) d6
 	val d7: sententialForm source source
 	let d7 = [PToken (new_Source0 "("); PToken (new_Source0 ")"); PToken (new_Source0 "("); PToken (new_Source0 "("); PToken (new_Source0 ")"); PToken (new_Source0 ")")]
 
 
-
-	//val dl7: lderSeqType source source (Helpers.lift cbs)
-	//let dl7 = 
-	//	assert (lderivesSeq source source (Helpers.lift cbs) [d1; d2; d3; d4; d5] ) ;
-	//	assert (lderivesSeq source source (Helpers.lift cbs) [d3; d4; d5; d6; d7] ) ;
-	//	[d1; d2; d3; d4; d5; d6; d7]
-
-
-	
-
-
-(*
-//for lulz 
-
-	val rewriteRL: #a:eqtype -> #b:eqtype -> list (rule a b) -> sententialForm a b -> Tot (list (sententialForm a b))
-	let rewriteRL #a #b ruleList sf =
-		List.Tot.flatten (List.Tot.map (rewrite sf) ruleList)
-
-
-	let bind sfl f = List.Tot.flatten (List.Tot.map f sfl)
-
-*)
-
-
-
-(*	//alternative def
-	type language (a:eqtype) (b:eqtype) (ruleList: list (rule a b)) = 
-		lang: list (sentence a b) {forall sent. List.Tot.mem sent lang ==> lderives ruleList (getStartNonterm ruleList) sent}
-*) 
-
-	type language (a:eqtype) (b:eqtype) (ruleList: list (rule a b)) = 
-		word: (sentence a b) { exists (seq: lderSeqType a b ruleList). is_Cons seq /\ List.Tot.hd seq = getStartNonterm ruleList /\ listLast seq = word }
-
-
-
-
-
-	//val ts: language source source (Helpers.lift cbs)
-	//let ts =
-	//	assert (lderivesSeq source source (Helpers.lift cbs) [d1; d2; d3; d4; d5; d6; d7] ) ;
-	//	[PToken (new_Source0 "("); PToken (new_Source0 ")"); PToken (new_Source0 "("); PToken (new_Source0 "("); PToken (new_Source0 ")"); PToken (new_Source0 ")")]
-
-
-(*
-//
-    val tsL: #a:eqtype -> #b:eqtype 
-        -> ruleList:list (rule a b) -> 
-        Lemma 
-            (requires (ruleList: list (rule a b) {forall rule0. List.Tot.mem rule0 ruleList ==> isNotEpsRule rule0}))
-            (ensures (List.Tot.isEmpty (getEpsRuleNameList ruleList)))
-
-    let rec tsL #a #b ruleList = 
-        match ruleList with  
-        | [] -> ()
-        | hd::tl -> epsGenLemma1 tl
-*)
-
-
-	assume val compose: #a:Type -> #b:Type -> list (rule a b) -> Tot (rule a b)
-	assume val subset: #a:Type -> list a -> list a -> Tot bool
-	assume val alphabet: #a:Type -> #b:Type -> list (rule a b) -> Tot (list (sententialForm a b))
-
-    assume val subLangTheorem: #a:eqtype -> #b:eqtype -> rl1: list (rule a b) -> rl2: list (rule a b)
-        -> Lemma 
-            (requires True) 
-            (ensures ( 
-            	
-            	(forall (x: language a b rl1). exists (y: language a b rl2). x = y) <==> // X in Y
-            		
-            		( forall rule1. List.Tot.mem rule1 rl1 ==> 
-
-            			(exists sub_rl2. subset sub_rl2 rl2 /\ 
-            				(forall term. List.Tot.mem term (alphabet rl1) ==> (rewrite term rule1 = rewrite term (compose sub_rl2))          )          
-            				
-            			)
-
-
-            				)
-
-
-
-            	)
-            )
 
 
 
@@ -328,272 +92,160 @@ module EquAlt
 	let rec nth #a l n = match l with
 		| hd::tl -> if n = 0 then hd else nth tl (n - 1)
 
-(*
-
-    val lemma0: 
-		x: language source source (Helpers.lift cbs)
-        -> Lemma 
-            (requires True) 
-            (ensures ( exists (y: language source source (SplitLongRule.splitLongRule cbs)). x = y ))
-    let lemma0 x =
-
-		let oldCbs = Helpers.lift cbs in 
-		let newCbs = SplitLongRule.splitLongRule cbs in
-		let snOldCbs = getStartNonterm oldCbs in
-		let snNewCbs = getStartNonterm newCbs in
-
-		assume (List.Tot.length oldCbs = 3);
-		assume (List.Tot.length newCbs = 4);
-
-    	let r1 = nth oldCbs 0 in 
-    	let r2 = nth oldCbs 1 in 
-    	let r3 = nth oldCbs 2 in 
-
-	   	let nr1 = nth newCbs 0 in 
-    	let nr2 = nth newCbs 1 in 
-    	let nr3 = nth newCbs 2 in 
-    	let nr4 = nth newCbs 3 in 
-
-    	
-    	assume (forall (x: sententialForm source source). (forall t. List.Tot.mem t x ==> List.Tot.mem t (termCbs @ nonTermCbs)) /\ rewrite x r1 = rewrite (rewrite x nr1) nr2 );
-    	assume (forall (x: sententialForm source source). rewrite x r2 = rewrite x nr3);
-    	assume (forall (x: sententialForm source source). rewrite x r3 = rewrite x nr4);
 
 
+//Test
+	val d_d1_d7: derives old_cbs [start_symbol_old_cbs] d7
+	let d_d1_d7 = 
+		assert (List.Tot.length old_cbs = 3);
 
-		assert ( exists seq. is_Cons seq /\ List.Tot.hd seq = snOldCbs /\ listLast seq = x );
+		let rule0 = nth old_cbs 0 in
+		let rule1 = nth old_cbs 1 in
+		let rule2 = nth old_cbs 2 in
 
-		assume ( 
+		let (der1: derives old_cbs [start_symbol_old_cbs] [start_symbol_old_cbs]) = DerivesRefl [start_symbol_old_cbs] in
+		let (der2: derives old_cbs [start_symbol_old_cbs] d2) = DerivesStep [] [] rule1 der1 in
+		let (der3: derives old_cbs [start_symbol_old_cbs] d3) = 
+			let sf1 = [] in
+			let sf2 = [PRef (new_Source0 "S", None)] in
+			assert (sf1 @ [left rule0] @ sf2 = d2);
+			assert (sf1 @ (rigth rule0) @ sf2 = d3);
+			DerivesStep sf1 sf2	rule0 der2 in 
 
+		let (der4: derives old_cbs [start_symbol_old_cbs] d4) = 
+			let sf1 = [PToken (new_Source0 "(")] in
+			let sf2 = [PToken (new_Source0 ")"); PRef (new_Source0 "S", None)] in
+			assert (sf1 @ [left rule2] @ sf2 = d3);
+			assert (sf1 @ (rigth rule2) @ sf2 = d4);
+			DerivesStep sf1 sf2	rule2 der3 in 
 
-			(exists (seq: lderSeqType source source oldCbs). is_Cons seq /\ List.Tot.hd seq = snOldCbs /\ listLast seq = x) ==> 
-				(exists (seq: lderSeqType source source newCbs). is_Cons seq /\ List.Tot.hd seq = snNewCbs /\ listLast seq = x)
+		let (der5: derives old_cbs [start_symbol_old_cbs] d5) = 
+			let sf1 = [PToken (new_Source0 "("); PToken (new_Source0 ")")] in
+			let sf2 = [] in
+			assert (sf1 @ [left rule0] @ sf2 = d4);
+			assert (sf1 @ (rigth rule0) @ sf2 = d5);
+			DerivesStep sf1 sf2	rule0 der4 in 
 
+		let (der6: derives old_cbs [start_symbol_old_cbs] d6) = 
+			let sf1 = [PToken (new_Source0 "("); PToken (new_Source0 ")"); PToken (new_Source0 "(")] in
+			let sf2 = [PToken (new_Source0 ")")] in
+			assert (sf1 @ [left rule0] @ sf2 = d5);
+			assert (sf1 @ (rigth rule0) @ sf2 = d6);
+			DerivesStep sf1 sf2	rule0 der5 in 
 
-			);
+		let (der7: derives old_cbs [start_symbol_old_cbs] d7) = 
+			let sf1 = [PToken (new_Source0 "("); PToken (new_Source0 ")"); PToken (new_Source0 "("); PToken (new_Source0 "(")] in
+			let sf2 = [PToken (new_Source0 ")"); PToken (new_Source0 ")")] in
+			assert (sf1 @ [left rule2] @ sf2 = d6);
+			assert (sf1 @ (rigth rule2) @ sf2 = d7);
+			DerivesStep sf1 sf2	rule2 der6 in 
 
-
-
-    	assume (exists (y: language source source newCbs). x = y );
-    	assert (exists (y: language source source newCbs). x = y );
-
-    	()
-
+		der7
 
 
 
-*)
+	val eq_f: sf:sententialForm source source -> derives old_cbs [start_symbol_old_cbs] sf -> derives new_cbs [start_symbol_new_cbs] sf
+	let rec eq_f sf der = 
+		match der with
+		| DerivesRefl sf -> 
+			assert (sf = [start_symbol_old_cbs]);
+			assert ([start_symbol_new_cbs] = [start_symbol_old_cbs]);
+			assert ([start_symbol_new_cbs] = sf);
+			let (newder: derives new_cbs [start_symbol_new_cbs] sf) = DerivesRefl sf in
+			newder
+
+		| DerivesStep sf1 sf2 rule s_der -> 
+
+			assert (List.Tot.length old_cbs = 3);
+
+			let old_rule0 = nth old_cbs 0 in
+			let old_rule1 = nth old_cbs 1 in
+			let old_rule2 = nth old_cbs 2 in
+
+
+			assert (List.Tot.length new_cbs = 4);
+
+			let new_rule0 = nth new_cbs 0 in
+			let new_rule1 = nth new_cbs 1 in
+			let new_rule2 = nth new_cbs 2 in
+			let new_rule3 = nth new_cbs 3 in
+
+
+			let (newder: derives new_cbs [start_symbol_new_cbs] sf) = 
+
+				if rule = old_rule0 then
+					begin
+
+						let (temp2: derives new_cbs [start_symbol_new_cbs] (sf1 @ [left new_rule0] @ sf2) ) = eq_f (sf1 @ [left new_rule0] @ sf2) s_der in
+						let (temp3: derives new_cbs [start_symbol_new_cbs] (sf1 @ (rigth new_rule0) @ sf2) ) = DerivesStep sf1 sf2 new_rule0 temp2 in
+
+						let (temp4: derives new_cbs [start_symbol_new_cbs] sf) = 
+
+							let sf1n = sf1 @ [PToken (new_Source0 "(") ] in
+
+							assume (sf1n @ [left new_rule1] @ sf2 = sf1 @ (rigth new_rule0) @ sf2 );
+							assume (sf1n @ (rigth new_rule1) @ sf2 = sf);
+												
+							DerivesStep (sf1n) sf2 new_rule1 temp3 in
+
+	                	temp4
+
+                	end
+
+               	else if rule = old_rule1 then
+               		begin
+               			assert (rule = old_rule1);
+	               		assert (old_rule1 = new_rule2);
+
+						let (temp1: derives new_cbs [start_symbol_new_cbs] (sf1 @ [left new_rule2] @ sf2)) = eq_f (sf1 @ [left new_rule2] @ sf2) s_der in
+	                	DerivesStep sf1 sf2 new_rule2 temp1
+                	end
+
+                else 
+                	begin
+                		assert (rule = old_rule2);
+						assert (old_rule2 = new_rule3);
+
+						let (temp1: derives new_cbs [start_symbol_new_cbs] (sf1 @ [left new_rule3] @ sf2)) = eq_f (sf1 @ [left new_rule3] @ sf2) s_der in
+	                	DerivesStep sf1 sf2 new_rule3 temp1
+                	end
+                in
+
+			newder
+
+
+
+	type generates (#a:eqtype) (#b:eqtype) (g: list (rule a b)) = sf: sententialForm a b {derives g [start_symbol g] sf} 
+
+	val sf_d7: generates old_cbs 
+	let sf_d7 = d7
+
+
+	type produces (#a:eqtype) (#b:eqtype) (g: list (rule a b)) = sf: sentence a b { generates g } 
+
+	val s_d7: produces old_cbs 
+	let s_d7 = d7
+
+
+	//TODO: del
+	let rec concat l = match l with | [] -> "" | x::xs -> x ^ " " ^ concat xs 
+
+	val printer: a:sententialForm source source -> b:sententialForm source source -> cbs: list (rule source source) -> derives cbs a b -> string
+	let rec printer a b cbs der = 
+		(b |> List.Tot.collect (fun el -> match el with | PRef(s,_) | PToken(s) -> [s.text] | _ -> [])  |> concat) ^ 
+		
+		(match der with 
+		| DerivesRefl sf -> ""
+		| DerivesStep sf1 sf2 rule sder -> "\n" ^ printer a (sf1 @ [left rule] @ sf2) cbs sder)
 
 
 
 	let main = 
-		"> " ^ (Printer.printListRule old_cbs) ^ "\n\n" ^ (Printer.printListRule new_cbs)
+		//assume (new_cbs = new_cbs1); 
+		//"> " ^ (Printer.printListRule old_cbs) ^ "\n\n" ^ (Printer.printListRule new_cbs) ^ "\n\n" ^ (Printer.printListRule new_cbs1) 
 
- 	
-(*
-    val lemma0: 
-		x: language source source (Helpers.lift cbs)
-        -> Lemma 
-            (requires True) 
-            (ensures ( exists (y: language source source (SplitLongRule.splitLongRule cbs)). x = y ))
-    let rec lemma0 x = match x with
-    	| [] -> admit()
 
-(*
-	    	let oldCbs = Helpers.lift cbs in 
-	    	let newCbs = SplitLongRule.splitLongRule cbs in
-    		let snOldCbs = getStartNonterm oldCbs in
-    		let snNewCbs = getStartNonterm newCbs in
-*)
+		"> " ^ (printer [start_symbol_old_cbs] d7 old_cbs d_d1_d7) ^ "\n\n" ^ 
 
-(*
-    		assert ( List.Tot.length newCbs = 4 );
-    		let nr4 = nth newCbs 3 in 
-    		let d1 = snNewCbs in
-    		assert ( d1 = [PRef (new_Source0 "S", None)] );
-    		let (d2: sentence source source) = [] in
-    		assert (d2 = []);
-    		let seq = [d1;d2] in
-*)
+		"> " ^ (printer [start_symbol_new_cbs] d7 new_cbs (eq_f d7 d_d1_d7))
 
-(*
-    		let (seq: lderSeqType source source newCbs) = [] in
-    		let (y: sentence source source) = [] in
-
-
-    		assume (is_Cons seq);
-    		assume (List.Tot.hd seq = snNewCbs);
-    		assume (listLast seq = y);
-    		assert (exists (y: language source source newCbs). x = y);
-
-    		()
-*)
-//fail
-    	| hd::tl -> 
-
-    		//assume (tl << x); 
-
-    		assert (tl << x) ;
-
-
-    		admit ()
-    		//lemma0 tl
-*)
-
-
-(*
-    val lemma0: 
-		u:unit
-        -> Lemma 
-            (requires True) 
-            (ensures ( forall (x: language source source (Helpers.lift cbs)). exists (y: language source source (SplitLongRule.splitLongRule cbs)). x = y ))
-    let lemma0 () = 
-
-
-    	let oldCbs = Helpers.lift cbs in 
-    	let newCbs = SplitLongRule.splitLongRule cbs in
-
-
-    	let snOldCbs = getStartNonterm oldCbs in
-    	let snNewCbs = getStartNonterm newCbs in
-
-
-    	assert ( snOldCbs = snNewCbs );
-
-
-    	assert ( List.Tot.length cbs = 3 );
-    	assert ( List.Tot.length ncbs = 4 );
-
-
-    	let r1 = nth cbs 0 in 
-    	let r2 = nth cbs 1 in 
-    	let r3 = nth cbs 2 in 
-
-    	let nr1 = nth ncbs 0 in 
-    	let nr2 = nth ncbs 1 in 
-    	let nr3 = nth ncbs 2 in 
-    	let nr4 = nth ncbs 3 in 
-
-    	
-    	//assume (forall (x: sententialForm source source). (forall t. List.Tot.mem t x ==> List.Tot.mem t (termCbs @ nonTermCbs)) /\ rewrite x r1 = rewrite (rewrite x nr1) nr2 );
-    	//assume (forall (x: sententialForm source source). rewrite x r2 = rewrite x nr3);
-    	//assume (forall (x: sententialForm source source). rewrite x r3 = rewrite x nr4);
-
-//		type language source source oldCbs = 
-//			word: (sentence source source) { exists (seq: lderSeqType source source oldCbs). is_Cons seq /\ List.Tot.hd seq = snOldCbs /\ listLast seq = word }
-
-//		type language source source newCbs = 
-//			word: (sentence source source) { exists (seq: lderSeqType source source newCbs). is_Cons seq /\ List.Tot.hd seq = snNewCbs /\ listLast seq = word }
-
-
-
-
-    	//assert ( forall (x: language source source oldCbs). exists (y: language source source newCbs). x = y );
-
-    	()
-
-
-		
-		assert (forall (x:nat). exists (y:nat). x + x = y);
-
-		admit()
-*)
-
-
-(*
-    val lemma0: 
-		x: language source source (Helpers.lift cbs)
-        -> Lemma 
-            (requires True) 
-            (ensures ( exists (y: language source source (SplitLongRule.splitLongRule cbs)). x = y ))
-    let lemma0 x = 
-
-
-    	let oldCbs = Helpers.lift cbs in 
-    	let newCbs = SplitLongRule.splitLongRule cbs in
-
-
-    	let snOldCbs = getStartNonterm oldCbs in
-    	let snNewCbs = getStartNonterm newCbs in
-
-
-    	assert ( snOldCbs = snNewCbs );
-
-
-    	assert ( List.Tot.length oldCbs = 3 );
-    	assert ( List.Tot.length newCbs = 4 );
-
-
-    	//let r1 = nth cbs 0 in 
-    	//let r2 = nth cbs 1 in 
-    	//let r3 = nth cbs 2 in 
-
-    	//let nr1 = nth ncbs 0 in 
-    	//let nr2 = nth ncbs 1 in 
-    	//let nr3 = nth ncbs 2 in 
-    	//let nr4 = nth ncbs 3 in 
-
-    	
-    	//assume (forall (x: sententialForm source source). (forall t. List.Tot.mem t x ==> List.Tot.mem t (termCbs @ nonTermCbs)) /\ rewrite x r1 = rewrite (rewrite x nr1) nr2 );
-    	//assume (forall (x: sententialForm source source). rewrite x r2 = rewrite x nr3);
-    	//assume (forall (x: sententialForm source source). rewrite x r3 = rewrite x nr4);
-
-//		type language source source oldCbs = 
-//			word: (sentence source source) { exists (seq: lderSeqType source source oldCbs). is_Cons seq /\ List.Tot.hd seq = snOldCbs /\ listLast seq = word }
-
-//		type language source source newCbs = 
-//			word: (sentence source source) { exists (seq: lderSeqType source source newCbs). is_Cons seq /\ List.Tot.hd seq = snNewCbs /\ listLast seq = word }
-
-
-		
-		//assert (forall (x:nat). exists (y:nat). x + x = y);
-		assume ( exists (y: sentence source source). exists (seq: lderSeqType source source newCbs). is_Cons seq /\ List.Tot.hd seq = snNewCbs /\ listLast seq = y /\ x = y );
-
-		assert ( exists (y: language source source newCbs). x = y );
-		admit()
-*)
-
-
-(*
-
-
-
-    	let snOldCbs = getStartNonterm oldCbs in
-    	let snNewCbs = getStartNonterm newCbs in
-
-
-    	assert ( snOldCbs = snNewCbs );
-
-
-    	assert ( List.Tot.length oldCbs = 3 );
-    	assert ( List.Tot.length newCbs = 4 );
-
-
-    	//let r1 = nth cbs 0 in 
-    	//let r2 = nth cbs 1 in 
-    	//let r3 = nth cbs 2 in 
-
-    	//let nr1 = nth ncbs 0 in 
-    	//let nr2 = nth ncbs 1 in 
-    	//let nr3 = nth ncbs 2 in 
-    	//let nr4 = nth ncbs 3 in 
-
-    	
-    	//assume (forall (x: sententialForm source source). (forall t. List.Tot.mem t x ==> List.Tot.mem t (termCbs @ nonTermCbs)) /\ rewrite x r1 = rewrite (rewrite x nr1) nr2 );
-    	//assume (forall (x: sententialForm source source). rewrite x r2 = rewrite x nr3);
-    	//assume (forall (x: sententialForm source source). rewrite x r3 = rewrite x nr4);
-
-//		type language source source oldCbs = 
-//			word: (sentence source source) { exists (seq: lderSeqType source source oldCbs). is_Cons seq /\ List.Tot.hd seq = snOldCbs /\ listLast seq = word }
-
-//		type language source source newCbs = 
-//			word: (sentence source source) { exists (seq: lderSeqType source source newCbs). is_Cons seq /\ List.Tot.hd seq = snNewCbs /\ listLast seq = word }
-
-
-		
-		//assert (forall (x:nat). exists (y:nat). x + x = y);
-		assume ( exists (y: sentence source source). exists (seq: lderSeqType source source newCbs). is_Cons seq /\ List.Tot.hd seq = snNewCbs /\ listLast seq = y /\ x = y );
-
-		assert ( exists (y: language source source newCbs). x = y );
-		admit()
-*)

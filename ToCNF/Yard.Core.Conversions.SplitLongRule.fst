@@ -107,72 +107,10 @@ module Yard.Core.Conversions.SplitLongRule
       | hd::tl -> collect_ShortRulesL f tl   
 
     val splitLongRule: #a:eqtype -> #b:eqtype
-        -> list ( rule0: (rule a b) {Helpers.isPSeq rule0.body} ) -> Tot (shortRuleList a b)
+        //-> list ( rule0: (rule a b) {Helpers.isPSeq rule0.body} ) -> Tot (shortRuleList a b)
+        -> list (rule a b) -> Tot (shortRuleList a b)
     let splitLongRule #a #b ruleList = 
-        List.Tot.collect (cutRule []) ruleList      
-
-
-		
-(*
-
-		
-	val append_ShortRules: 
-		rule1:(list (rule 'a  'b)) {List.Tot.for_all isRightPartLengthLE2 rule1} 
-        -> rule2:(list (rule 'a  'b)) {List.Tot.for_all isRightPartLengthLE2 rule2} 
-        -> Tot (result:(list (rule 'a  'b)){List.Tot.for_all isRightPartLengthLE2 result})
-	let rec append_ShortRules rule1 rule2 = match rule1 with
-	  | [] -> rule2
-	  | hd::tl -> hd::append_ShortRules tl rule2
-  
-	val collect_ShortRules: 
-		((rule 'a  'b) -> Tot (l:(list (rule 'a  'b)){List.Tot.for_all isRightPartLengthLE2 l} ))
-		-> list (rule 'a  'b) 		
-		-> Tot (result:(list (rule 'a  'b)){List.Tot.for_all isRightPartLengthLE2 result})
-	let rec collect_ShortRules f l = match l with
-		| [] -> []
-		| hd::tl -> append_ShortRules (f hd) (collect_ShortRules f tl)
-	
-
-    val splitLongRule: 
-		ruleList : list (rule 'a 'b) 
-	    -> Tot (result:(list (rule 'a 'b)){List.Tot.for_all isRightPartLengthLE2 result})
-    let splitLongRule ruleList = collect_ShortRules (fun rule -> cutRule rule []) ruleList		
-*)
-
-
-
-(*
-    val heightBodyEl: elem 'a 'b -> Tot int
-    val heightBodyEls: list (elem 'a 'b) -> Tot int
-                    
-    let rec heightBodyEls elements = 
-        match elements with             
-            | hd :: tl -> heightBodyEl hd + heightBodyEls tl                
-            | _ -> 0
-    and heightBodyEl element = 
-        match element.rule with
-        | PSeq(e, _, _) -> 1 + (heightBodyEls e)
-        | _ -> 0        
-*)       
-
-(*
-    assume val newSourceLemma:  
-        n:int -> source:Source ->  
-        Lemma (source <> newSource n source)
-
-    assume val injectiveNewSource: 
-        source1:Source -> source2:Source ->
-        Lemma   (requires (source1 <> source2))
-                (ensures (forall n m. (newSource n source1 <> newSource m source2)))
-*)
-
-
-//    val createRule:
-//        source 
-//        -> list 'a //'
-//        -> body:(production 'a 'b){Helpers.getPSeqBodyLength body <= 2}
-//        -> bool 
-//        -> list 'a //'
-//        -> Tot (rule0:(rule 'a 'b){isRightPartLengthLE2 rule0})
-//    let createRule name args body mArgs = 
-//        { name = name; args = args; body = body; isStart = false; metaArgs = mArgs; isPublic = false }
+        let (ruleList2: list ( rule0: (rule a b) {Helpers.isPSeq rule0.body} ) ) = 
+            assume ( 2 < 1 );
+            ruleList in
+        List.Tot.collect (cutRule []) ruleList2      
