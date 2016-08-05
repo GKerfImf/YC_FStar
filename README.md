@@ -1,10 +1,4 @@
 ## YC + F*
-- [x] Short right rules "lemma"
-- [x] DeleteEpsRule is Tot
-- [x] DeleteChainRule is Tot
-- [ ] RenameTerm is Tot
-- [ ] DeleteEpsRule's progress
-- [ ] DeleteChainRule's progress
 - [ ] Main Lemma
 
 

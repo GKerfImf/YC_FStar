@@ -75,7 +75,7 @@ module Yard.Core.Conversions.SplitLongRule
 
     val cutRule: #a:eqtype -> #b:eqtype
         -> shortRuleList a b
-        -> rule0 : (rule0: (rule a b) {Helpers.isPSeq rule0.body}) 
+        -> rule0: (rule a b) {Helpers.isPSeq rule0.body}
         -> Tot (shortRuleList a b) (decreases %[Helpers.getRightPartLength rule0])
     let rec cutRule #a #b resultRuleList rule  = 
         let elements = match rule.body with | PSeq(e, a, l) -> e | _ -> [] in
@@ -91,9 +91,58 @@ module Yard.Core.Conversions.SplitLongRule
             //assert (Helpers.getRightPartLength tempRule < Helpers.getRightPartLength rule);
             cutRule (appendShort newRule resultRuleList) ({ rule with body = PSeq(changedRule, ac,lbl) } ) 
         else
-            appendShort rule resultRuleList //({ rule with name = newSource (List.Tot.length resultRuleList) rule.name})    
+            appendShort rule resultRuleList
 
-//--------------------------------------------------------
+(*
+    assume val cutRule_res_lemma: #a:eqtype -> #b:eqtype -> r: (rule a b) {Helpers.isPSeq r.body} -> 
+        Lemma 
+            (requires ( Helpers.getRightPartLength r > 2 ) )
+            (ensures ( List.Tot.length (cutRule [] r) = (Helpers.getRightPartLength r) - 1) ) 
+
+    assume val cutRule_len_lemma: #a:eqtype -> #b:eqtype -> r: (rule a b) {Helpers.isPSeq r.body} -> 
+        Lemma 
+            (requires ( Helpers.getRightPartLength r > 2 ) )
+            (ensures ( forall r0. List.Tot.mem r0 (cutRule [] r) ==> Helpers.getRightPartLength r0 = 2  ) )         
+
+
+    val cutRule_lemma: #a:eqtype -> #b:eqtype -> r: (rule a b) {Helpers.isPSeq r.body} -> 
+        Lemma 
+            (requires ( Helpers.getRightPartLength r > 2 ) )
+            (ensures ( List.Tot.length (cutRule [] r) = (Helpers.getRightPartLength r) - 1) ) 
+    let cutRule_lemma #a #b r =
+        let lr = Helpers.getRightPartLength r in
+        assert ( lr > 2 );
+
+        let cr = cutRule [] r in
+        let lcr = List.Tot.length cr in
+
+        cutRule_res_lemma r; 
+        assert ( lcr = lr - 1 );
+        assert ( lcr >= 2 );
+
+        cutRule_len_lemma r; 
+        assert ( forall r0. List.Tot.mem r0 cr ==> Helpers.getRightPartLength r0 = 2 );
+
+        assert ( cn:nat ) ; 
+
+(*      //Remark:
+        let noname (r0: (rule a b) {Helpers.getRightPartLength r0 = 2} ) = Helpers.left r0, (List.Tot.hd (Helpers.rigth r0), List.Tot.hd (List.Tot.tl (Helpers.rigth r0))) in
+        
+        //Error:
+            expected type: (rule a b) -> Tot (production a b, (production a b, production a b)) 
+                 got type: r0:(rule a b){getRightPartLength r0 = 2} -> Tot (production a b, (production a b, production a b)) 
+        let temp = List.Tot.map noname cr in
+*)
+        let noname r0 = 
+            assume (Helpers.getRightPartLength r0 = 2); //Dirty hack
+            Helpers.left r0, (List.Tot.hd (Helpers.rigth r0), List.Tot.hd (List.Tot.tl (Helpers.rigth r0))) in
+
+        let temp = List.Tot.map noname cr in
+
+        admit ()
+
+*)
+
 
     val collect_ShortRulesL: #a:eqtype -> #b:eqtype
         -> f: (rule a b -> Tot (shortRuleList a b))
@@ -110,7 +159,7 @@ module Yard.Core.Conversions.SplitLongRule
         //-> list ( rule0: (rule a b) {Helpers.isPSeq rule0.body} ) -> Tot (shortRuleList a b)
         -> list (rule a b) -> Tot (shortRuleList a b)
     let splitLongRule #a #b ruleList = 
-        let (ruleList2: list ( rule0: (rule a b) {Helpers.isPSeq rule0.body} ) ) = 
-            assume ( 2 < 1 );
-            ruleList in
-        List.Tot.collect (cutRule []) ruleList2      
+        let (ruleList2: list ( rule0: (rule a b) {Helpers.isPSeq rule0.body} ) ) = assume ( false ); ruleList in    //Magic
+        List.Tot.fold_left (cutRule) [] ruleList2  
+
+ 

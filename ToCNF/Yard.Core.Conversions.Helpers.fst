@@ -242,3 +242,17 @@ fail:
     //let t = s (n: int {n > 0}) (list)
 
 
+//-------------------- Equ ------------------------------------------------------------------------------------------
+
+    val getProds: #a:eqtype -> #b:eqtype -> rule a b -> Tot (list (production a b))
+    let getProds #a #b rule = match rule.body with
+        | PSeq(els,_,_) -> List.Tot.map (fun elem -> elem.rule) els
+        | _ -> []
+
+    val left: #a:eqtype -> #b:eqtype -> rule a b -> Tot (production a b)
+    let left #a #b rule = PRef (rule.name, None) 
+
+    val rigth: #a:eqtype -> #b:eqtype -> r: rule a b -> Tot (list (production a b))
+    let rigth #a #b rule = getProds rule 
+
+//-------------------------------------------------------------------------------------------------------------------
