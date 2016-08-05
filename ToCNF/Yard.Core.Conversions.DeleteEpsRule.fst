@@ -153,7 +153,7 @@ module Yard.Core.Conversions.DeleteEpsRule
     | [] -> ()
     | hd::tl -> swapLemmaExpl a b f p tl
 
-//TODO: del 
+    //TODO: del 
     val swapLemmaImp: #a:eqtype -> #b:eqtype -> f: (a -> Tot b) -> p: (b -> Tot bool) -> l: list a ->
         Lemma 
             (requires True)
@@ -171,6 +171,25 @@ module Yard.Core.Conversions.DeleteEpsRule
     let rec multMonot () = ()
 
 
+    assume val noname1: a:eqtype -> l: list a -> f: (a -> Tot nat) -> g: (a -> Tot nat) ->
+        Lemma 
+            (requires True)
+            (ensures (
+                (forall x. List.Tot.mem x l ==> g x <= pow2 (f x)) <==>
+                    (forall x. List.Tot.mem x l ==> g x <=  pow2 (max (List.Tot.map f l) ))
+                ))
+
+    assume val noname2: u:unit ->
+        Lemma 
+            (requires True)
+            (ensures 
+                (forall (l:list nat {is_Cons l}) (m:nat). 
+                    (forall (x:nat). List.Tot.mem x l ==> x <= m) ==> 
+                        max l <= m)
+            )
+
+
+
 
     val deleteEpsRule: #a:eqtype -> #b:eqtype 
         -> list (rule0: rule a b {Helpers.isPSeq rule0.body}) 
@@ -181,81 +200,41 @@ module Yard.Core.Conversions.DeleteEpsRule
         assume (is_Cons ruleList);
 
 
-        assume (List.Tot.map List.Tot.length (List.Tot.map Helpers.getRightPartList ruleList) = List.Tot.map Helpers.getRightPartLength ruleList) ; 
+        assume ( List.Tot.map List.Tot.length (List.Tot.map Helpers.getRightPartList ruleList) = List.Tot.map Helpers.getRightPartLength ruleList ) ; 
         assume ( forall (x: rule a b {Helpers.isPSeq x.body}). List.Tot.length (Helpers.getRightPartList x) = Helpers.getRightPartLength x ) ;
 
 
         assume (forall (n:nat). n < pow2 n);
 
-        assume (forall x l. List.Tot.mem x l ==> x <= max l);
+        //assume (forall x l. List.Tot.mem x l ==> x <= max l);
 
 
-        assume (forall (l:list nat). is_Cons l ==> sum l <= op_Multiply (List.Tot.length l) (max l) ) ;
+        //assume (forall (l:list nat {is_Cons l } ). sum l <= op_Multiply (List.Tot.length l) (max l) ) ;
 
-        assume (forall (a:eqtype) (l: list (list a)).  is_Cons l ==>  List.Tot.length (List.Tot.flatten l) <=  op_Multiply (List.Tot.length l) (max (List.Tot.map List.Tot.length l)) ) ; 
-
-
+        assume (forall (a:eqtype) (l: list (list a) {is_Cons l } ).  List.Tot.length (List.Tot.flatten l) <=  op_Multiply (List.Tot.length l) (max (List.Tot.map List.Tot.length l)) ) ; 
 
 
-        multMonot (); 
+
+//---------------------------------------------------------------------------------
 
 
         let powRulesMap = 
             List.Tot.map (newRules epsGenNameList) ruleList in
 
-
-
-        //let t1 =  in
-        //let t2 = List.Tot.map Helpers.getRightPartLength ruleList in
-        //let mt1 = max (List.Tot.map List.Tot.length powRulesMap) in
-  
-        assume (forall (l:list nat {is_Cons l}) (m:nat). 
-            (forall (x:nat). List.Tot.mem x l ==> x <= m) ==> max l <= m); 
-
-
-
-//        assume ( forall (a:Type) (p: a -> Tot bool) (t0: a) (t1: list a) (t2: list (list a)). 
-//            (List.Tot.mem t (List.Tot.map List.Tot.length t2) ==> p t) ==>
-//                List.Tot.mem t2 
-//            );
-
-
-        //assert ( forall t. List.Tot.mem t t1 ==> t <= mt1 );
-
-        //assert ( forall t. List.Tot.mem t t2 ==> t <= mt2 );
-        //assert ( forall t. List.Tot.mem t t2 ==> t <= pow2 mt2 );
-
-        ///let p = fun x -> x <= pow2 mt2 in
-
-
-        //assume ( forall rule. List.Tot.mem rule ruleList ==> 
-        //    p (List.Tot.length (newRules epsGenNameList rule)) ) ;
-
-        
+        multMonot (); 
+        noname2 ();
 
         assert (forall rule. List.Tot.mem rule ruleList ==> List.Tot.length (newRules epsGenNameList rule) <= pow2 (List.Tot.length (Helpers.getRightPartList rule))) ; 
         assert (forall rule. List.Tot.mem rule ruleList ==> List.Tot.length (newRules epsGenNameList rule) <= pow2 (Helpers.getRightPartLength rule)) ; 
 
 
-        let l = ruleList in
-
-        let f = Helpers.getRightPartLength in
         
         let g2 = newRules epsGenNameList in 
         let g = fun x -> List.Tot.length (g2 x) in
 
-        //TODO:
-        assume (
+        noname1 (rule0: rule a b {Helpers.isPSeq rule0.body}) ruleList Helpers.getRightPartLength g ; 
+        assert ( (forall x. List.Tot.mem x ruleList ==> g x <= pow2 (Helpers.getRightPartLength x)) <==> (forall x. List.Tot.mem x ruleList ==> g x <= pow2 (max (List.Tot.map Helpers.getRightPartLength ruleList) )) );
 
-            (forall x. List.Tot.mem x l ==> g x <= pow2 (f x)) <==>
-
-                (forall x. List.Tot.mem x l ==> g x <= pow2 (max (List.Tot.map f l) ))
-
-
-
-            );
-
-//---------------------------------------------------------------------------------
 
 
         let mt2 = max (List.Tot.map Helpers.getRightPartLength ruleList) in
@@ -266,7 +245,7 @@ module Yard.Core.Conversions.DeleteEpsRule
         assert ( forall rule. List.Tot.mem rule ruleList ==> 
             List.Tot.length (newRules epsGenNameList rule) <= pow2 mt2) ;
 
-        swapLemmaImp (newRules epsGenNameList) (fun x -> List.Tot.length x <= pow2 mt2) (ruleList) ;
+        swapLemmaExpl (rule0: rule a b {Helpers.isPSeq rule0.body}) (list (rule a b) ) (newRules epsGenNameList) (fun x -> List.Tot.length x <= pow2 mt2) (ruleList) ;
 
         assert ( forall powrule. List.Tot.mem powrule (List.Tot.map (newRules epsGenNameList) ruleList) ==> 
             List.Tot.length powrule <= pow2 mt2) ; 

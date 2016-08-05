@@ -35,9 +35,11 @@ module Main
     let main =
         print_string "Hello, universes!\n\n" ;
 
-        print_string (EquAlt.main ^ "\n")
+        //print_string (EquAlt.main ^ "\n")
 
 		//print_string ("\n" ^ Printer.printListRule (Helpers.lift testForDeleteChainRule) ^ "\n")
 		//print_string ("\n" ^ printListRule2 (SplitLongRule.splitLongRule testForSplitLongRule) ^ "\n")
-		//print_string ("\n" ^ printListRule2 (DeleteEpsRule.deleteEpsRule testForDeleteEpsRule) ^ "\n")
+
+		print_string ("\n" ^ Printer.printListRule (Helpers.lift testForDeleteEpsRule) ^ "\n");
+		print_string ("\n" ^ Printer.printListRule (DeleteEpsRule.deleteEpsRule testForDeleteEpsRule) ^ "\n")
 		//print_string ("\n" ^ printListRule (Helpers.lift (DeleteChainRule.deleteChainRule testForDeleteChainRule)) ^ "\n")
