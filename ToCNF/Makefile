@@ -13,11 +13,9 @@
 
 
 VERFILES=\
-	IL.fst\
-    Yard.Core.Conversions.Helpers.fst\
-    Yard.Core.Conversions.DeleteEpsRule.fst\
-    Printer.fst\
-    Main.fst
+	EquLikeInCoqPaper.fst\
+	TestEquLikeInCoqPaper.fst
+
 
 #VERFILES=\
 	IL.fst\
@@ -29,7 +27,7 @@ VERFILES=\
  
 LIB_FILES = FStar.Ghost.fst FStar.FunctionalExtensionality.fst FStar.PredicateExtensionality.fst\
     FStar.TSet.fst FStar.Set.fst FStar.Heap.fst FStar.ST.fst FStar.All.fst FStar.Float.fsti FStar.IO.fsti\
-    FStar.List.Tot.fst FStar.ListProperties.fst
+    FStar.List.Tot.fst FStar.ListProperties.fst FStar.Constructive.fst
 	
 
 
@@ -40,12 +38,12 @@ FSTAR = $(BIN)/fstar.exe
 
 
 
-#all: ver
-all: extrToCNFOCaml 
+all: ver
+#all: extrToCNFOCaml 
 
 
 ver: $(VERFILES)
-	$(FSTAR) --explicit_deps $(LIB_FILES) $^
+	$(FSTAR) --z3timeout 100 --explicit_deps $(LIB_FILES) $^
 
 extrToCNFOCaml: $(VERFILES)
 	$(FSTAR) --explicit_deps --use_native_int --odir out --codegen OCaml $(LIB_FILES) $^
