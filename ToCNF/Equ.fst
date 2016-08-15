@@ -1,4 +1,4 @@
-module EquAlt
+module Equ
 	open FStar.IO
 	open IL
 	open Yard.Core.Conversions
