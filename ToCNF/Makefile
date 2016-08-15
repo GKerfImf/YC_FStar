@@ -13,19 +13,11 @@
 
 
 VERFILES=\
-	EquLikeInCoqPaper.fst\
-	TestEquLikeInCoqPaper.fst
-
-
-#VERFILES=\
-	IL.fst\
-    Yard.Core.Conversions.Helpers.fst\
-    Yard.Core.Conversions.SplitLongRule.fst\
-    Printer.fst\
-    EquAlt.fst\
-    Main.fst    
+	EquANewHope.fst
+	
+LIB_FILES = FStar.List.Tot.fst FStar.Constructive.fst
  
-LIB_FILES = FStar.Ghost.fst FStar.FunctionalExtensionality.fst FStar.PredicateExtensionality.fst\
+#LIB_FILES = FStar.Ghost.fst FStar.FunctionalExtensionality.fst FStar.PredicateExtensionality.fst\
     FStar.TSet.fst FStar.Set.fst FStar.Heap.fst FStar.ST.fst FStar.All.fst FStar.Float.fsti FStar.IO.fsti\
     FStar.List.Tot.fst FStar.ListProperties.fst FStar.Constructive.fst
 	
@@ -38,12 +30,23 @@ FSTAR = $(BIN)/fstar.exe
 
 
 
-all: ver
+all: ver2
 #all: extrToCNFOCaml 
 
 
 ver: $(VERFILES)
 	$(FSTAR) --z3timeout 100 --explicit_deps $(LIB_FILES) $^
+
+
+ver1: $(VERFILES)
+	$(FSTAR) --explicit_deps $(LIB_FILES) $^
+
+ver2: $(VERFILES)
+	$(FSTAR) --z3timeout 120 --print_fuels --initial_fuel 8 --initial_ifuel 8 --max_fuel 32 --max_ifuel 32 --explicit_deps $(LIB_FILES) $^
+
+ver3: $(VERFILES)
+	$(FSTAR) --z3timeout 10000 --explicit_deps --print_fuels --initial_fuel 1 --initial_ifuel 1 --max_fuel 18 --max_ifuel 18 --print_implicits $(LIB_FILES) $^
+
 
 extrToCNFOCaml: $(VERFILES)
 	$(FSTAR) --explicit_deps --use_native_int --odir out --codegen OCaml $(LIB_FILES) $^
@@ -72,3 +75,13 @@ endif
 #add_stdlib_prefix = $(addprefix $(FSTAR_HOME)/ulib/,$(1))
 #STDLIB = $(call add_stdlib_prefix, $(LIB_FILES))
 #STDLIB = $(LIB_FILES)
+
+
+
+
+# issues 326
+# --trace_error
+# --debug_level
+# --print_before_norm
+# --unthrottle_inductives
+# --in
