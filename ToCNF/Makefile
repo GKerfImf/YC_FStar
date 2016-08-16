@@ -42,7 +42,7 @@ ver1: $(VERFILES)
 	$(FSTAR) --explicit_deps $(LIB_FILES) $^
 
 ver2: $(VERFILES)
-	$(FSTAR) --z3timeout 120 --print_fuels --initial_fuel 8 --initial_ifuel 8 --max_fuel 32 --max_ifuel 32 --explicit_deps $(LIB_FILES) $^
+	$(FSTAR) --print_fuels --z3timeout 10 --initial_fuel 8 --initial_ifuel 8 --max_fuel 64 --max_ifuel 16 --explicit_deps $(LIB_FILES) $^
 
 ver3: $(VERFILES)
 	$(FSTAR) --z3timeout 10000 --explicit_deps --print_fuels --initial_fuel 1 --initial_ifuel 1 --max_fuel 18 --max_ifuel 18 --print_implicits $(LIB_FILES) $^
@@ -75,13 +75,3 @@ endif
 #add_stdlib_prefix = $(addprefix $(FSTAR_HOME)/ulib/,$(1))
 #STDLIB = $(call add_stdlib_prefix, $(LIB_FILES))
 #STDLIB = $(LIB_FILES)
-
-
-
-
-# issues 326
-# --trace_error
-# --debug_level
-# --print_before_norm
-# --unthrottle_inductives
-# --in
