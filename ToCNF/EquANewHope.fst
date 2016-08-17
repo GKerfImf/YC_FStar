@@ -3,10 +3,12 @@ open FStar.Constructive
 open FStar.List.Tot
 
 type nonterm = 
-    | NT of string 
+    | NT of string
+assume HasEq_nonterm: hasEq nonterm    
 
 type term = 
     | T of string 
+assume HasEq_term: hasEq term    
 
 type symbol = cor nonterm term 
 type sf = list symbol 
@@ -73,7 +75,7 @@ let rec splitR acc1 acc2 =
 
 
 
-assume Derives: 
+assume DerivesEval: 
     forall (g: cfg) (old_sf: sf) (new_sf: sf). 
         derives g old_sf new_sf <==> 
             old_sf = new_sf 
@@ -86,6 +88,11 @@ assume Derives:
                         )
                 ) 
 
+assume DerivesStep: 
+    forall (g: cfg) (s1: sf) (s2:sf) (s3: sf) (left: nonterm) (right: sf).
+        List.Tot.mem (left, right) g.rules /\ derives g s1 (s2 @ [IntroL left] @ s3 ) ==> derives g s1 (s2 @ right @ s3)
+    
+            
 
            
 let g1: cfg = {
@@ -221,167 +228,64 @@ assume GrEqu:
 let test_36 = assert ( g1 |=| g1_copy )
 
 
-(*
-val permut_tr_eq_Lemma: g:cnf ->
-    Lemma 
-        (requires (g.start_symbol = g.start_symbol /\ (forall r. List.Tot.mem r g1.rules <==> List.Tot.mem r g2.rules))) 
-        (ensures (List.Tot.length (powerset l) <= pow2 (List.Tot.length l)))
-        [SMTPat (powerset l)]
-let rec rev_tr_eq_Lemma #a l = 
-    match l with
-    | [] -> ()
-    | hd::tl -> admit ()
-*)
 
 val rev_transform: g1:cfg -> Tot (g2: cfg {g1.start_symbol = g2.start_symbol /\ (forall r. List.Tot.mem r g1.rules <==> List.Tot.mem r g2.rules) } ) 
 let rev_transform g = 
     assume (false);
     {g with rules = List.Tot.rev g.rules} 
 
+
+assume val ind_axiom: g1:cfg -> g2:cfg ->
+    Lemma 
+        (requires True) 
+        (ensures 
+                (
+                    (forall s0. 
+                        derives g2 s0 s0) 
+                    /\ (forall (s1: sf) (s2:sf) (s3: sf) (left: nonterm) (right: sf).
+                            List.Tot.mem (left, right) g1.rules /\ derives g1 s1 (s2 @ [IntroL left] @ s3) /\ derives g2 s1 (s2 @ [IntroL left] @ s3) 
+                                ==> derives g2 s1 (s2 @ right @ s3))
+                        ==> (forall nsf. derives g1 [IntroL g1.start_symbol] nsf ==> derives g2 [IntroL g2.start_symbol] nsf)
+                )
+         )
+
 val rev_tr_eq_Lemma: g1:cfg ->
     Lemma 
         (requires True) 
-        (ensures (
-            let g2 = rev_transform g1 in
-            forall n_sf. derives g1 [IntroL g1.start_symbol] n_sf <==> derives g2 [IntroL g2.start_symbol] n_sf
-            )
-        )
-let rec rev_tr_eq_Lemma g1 = 
+        (ensures (g1 |=| rev_transform g1))
 
-
-
-
+let rec rev_tr_eq_Lemma g1 =
     let g2 = rev_transform g1 in
 
 
-    assert ( g1.start_symbol = g2.start_symbol );
-    assert ( forall r. List.Tot.mem r g1.rules <==> List.Tot.mem r g2.rules );
-
-    let old_sf = [IntroL g1.start_symbol] in
+    let ss = g1.start_symbol in
+    assert (ss = g1.start_symbol /\ ss = g2.start_symbol);
 
 
-
-    assert (derives g1 old_sf old_sf ==> derives g2 old_sf old_sf) ;
-
-
-    // Temp
-    assume (
-
-        forall left right sf1 sf2 l_sf r_sf. 
-
-            List.Tot.mem (left, right) g1.rules 
-            /\ (sf1 @ [IntroL left] @ sf2) = l_sf 
-            /\ (sf1 @ right @ sf2) = r_sf 
-            /\ (derives g1 old_sf l_sf ==> derives g2 old_sf l_sf) ==> 
-
-
-            //derives g1 old_sf r_sf ==> derives g2 old_sf r_sf
-
-
-            (
-                         (exists (leftn: nonterm) (rightn: sf).
-                            True
-                            /\ List.Tot.mem (leftn, rightn) g1.rules
-                            ///\ leftn = left 
-                            //\ rightn = right
-                                /\ (let (sf1,sf2) = splitR [] r_sf in
-                                    sf1 @ rightn @ sf2 = r_sf /\ derives g1 old_sf (sf1 @ [IntroL leftn] @ sf2))))
-            ==> 
-
-            (
-                (exists (leftn: nonterm) (rightn: sf).
-                    True
-                    /\ leftn = left 
-                    /\ rightn = right
-                        /\ (let (sf1n,sf2n) = splitR [] r_sf in
-                            sf1 = sf1n 
-                            /\ sf2 = sf2n
-                            /\ sf1n @ right @ sf2n = r_sf
-                            /\ sf1n @ [IntroL left] @ sf2n = l_sf
-                            /\ derives g2 old_sf (sf1n @ [IntroL left] @ sf2n)
-
-                            )
-                )
-             )
-
-        ) ;
-
-    // Temp
-    assert (
-
-        forall left right sf1 sf2 l_sf r_sf. 
-
-            List.Tot.mem (left, right) g1.rules 
-            /\ (sf1 @ [IntroL left] @ sf2) = l_sf 
-            /\ (sf1 @ right @ sf2) = r_sf 
-            /\ (derives g1 old_sf l_sf ==> derives g2 old_sf l_sf) ==> 
-
-
-            //derives g1 old_sf r_sf ==> derives g2 old_sf r_sf
-
-
-            (
-                         (exists (leftn: nonterm) (rightn: sf).
-                            True
-                            /\ List.Tot.mem (leftn, rightn) g1.rules
-                            //\ leftn = left 
-                            //\ rightn = right
-                                /\ (let (sf1,sf2) = splitR [] r_sf in
-                                    sf1 @ rightn @ sf2 = r_sf /\ derives g1 old_sf (sf1 @ [IntroL leftn] @ sf2))))
-            ==> 
-
-            (
-                         (exists (leftn: nonterm) (rightn: sf).
-                            True
-                            /\ List.Tot.mem (leftn, rightn) g2.rules
-                            //\ leftn = left 
-                            //\ rightn = right
-                                /\ (let (sf1,sf2) = splitR [] r_sf in
-                                    sf1 @ rightn @ sf2 = r_sf /\ derives g2 old_sf (sf1 @ [IntroL leftn] @ sf2))))
-
-        ) ;
-
-    // Temp
-    assert (
-
-        forall left right sf1 sf2 l_sf r_sf. 
-
-            List.Tot.mem (left, right) g1.rules 
-            /\ (sf1 @ [IntroL left] @ sf2) = l_sf 
-            /\ (sf1 @ right @ sf2) = r_sf 
-            /\ (derives g1 old_sf l_sf ==> derives g2 old_sf l_sf)
-
-                ==> derives g1 old_sf r_sf ==> derives g2 old_sf r_sf
-        ) ;
-
-
-// Induction axiom
-    assume (
-        forall (g1: cfg) (g2: cfg) (old_sf: sf).
-            (derives g1 old_sf old_sf ==> derives g2 old_sf old_sf) /\ 
-
-            (forall left right sf1 sf2. 
-                List.Tot.mem (left, right) g1.rules /\ (derives g1 old_sf (sf1 @ [IntroL left] @ sf2) ==> derives g2 old_sf (sf1 @ [IntroL left] @ sf2))
-                    ==> (derives g1 old_sf (sf1 @ right @ sf2) ==> derives g2 old_sf (sf1 @ right @ sf2))
-            ) 
-
-            ==> (forall (new_sf: sf). derives g1 old_sf new_sf ==> derives g2 old_sf new_sf)
-    
+    assert (forall s0. derives g2 s0 s0);
+    assert (forall (s1: sf) (s2:sf) (s3: sf) (left: nonterm) (right: sf).
+        List.Tot.mem (left, right) g1.rules /\ List.Tot.mem (left, right) g2.rules /\ derives g1 s1 (s2 @ [IntroL left] @ s3) /\ derives g2 s1 (s2 @ [IntroL left] @ s3) 
+            ==> derives g2 s1 (s2 @ right @ s3)
     );
 
-    assert ( forall new_sf. derives g1 old_sf new_sf ==> derives g2 old_sf new_sf );
-    assume ( forall new_sf. derives g1 old_sf new_sf <==> derives g2 old_sf new_sf );
+    ind_axiom g1 g2; 
+    assert ( forall nsf. derives g1 [IntroL ss] nsf ==> derives g2 [IntroL ss] nsf);
+
+    
+    assert (forall s0. derives g1 s0 s0);
+    assert (forall (s1: sf) (s2:sf) (s3: sf) (left: nonterm) (right: sf).
+        List.Tot.mem (left, right) g2.rules /\ List.Tot.mem (left, right) g1.rules /\ derives g2 s1 (s2 @ [IntroL left] @ s3) /\ derives g1 s1 (s2 @ [IntroL left] @ s3) 
+            ==> derives g1 s1 (s2 @ right @ s3)
+    );
+    ind_axiom g2 g1; 
+    assert ( forall nsf. derives g2 [IntroL ss] nsf ==> derives g1 [IntroL ss] nsf);
+
+
+
+    assert ( forall nsf. derives g1 [IntroL ss] nsf <==> derives g2 [IntroL ss] nsf);
+    assert ( forall nsf. derives g1 [IntroL g1.start_symbol] nsf <==> derives g2 [IntroL g2.start_symbol] nsf);
+    assert ( forall nsf. generates g1 nsf <==> generates g2 nsf );
+    assert ( forall sent. produces g1 sent <==> produces g2 sent );
+    assert ( g1 |=| g2 );
     ()
 
-let test_37 g1 = 
-    let g2 = rev_transform g1 in
-
-    assert ( g1.start_symbol = g2.start_symbol ); 
-    assert (forall r. List.Tot.mem r g1.rules <==> List.Tot.mem r g2.rules);
-
-    rev_tr_eq_Lemma g1 ;
-
-    assert ( forall n_sf. derives g1 [IntroL g1.start_symbol] n_sf <==> derives g2 [IntroL g2.start_symbol] n_sf);
-    assert ( forall n_sf. generates g1 n_sf <==> generates g2 n_sf );
-    assert ( forall sent. produces g1 sent <==> produces g2 sent );
-    assert ( g1 |=| g2 )
