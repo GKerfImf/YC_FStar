@@ -25,31 +25,6 @@ let terminal_lift (t: term): symbol = IntroR t
 assume val derives: g:cfg -> old_sf:sf -> new_sf:sf -> Type 
 
 (*
-//Fail
-
-val s_nhd_ntl: nat -> list 'a -> list 'a -> Tot ((list 'a) * (list 'a))
-let rec s_nhd_ntl n nhd ntl =
-    assume (false);
-    if n = 0 then (nhd, ntl) else s_nhd_ntl (n-1) (nhd @ [hd ntl]) (tl ntl)
-
-val helper: #a:eqtype -> list a -> list a -> list a -> Tot ((list a) * (list a))
-let rec helper #a sub_lst acc1 acc2 = 
-
-    if (length acc2 > length sub_lst) 
-    then
-        begin
-            let (l,r) = s_nhd_ntl (length sub_lst) [] acc2 in 
-            assume(false);
-            if l = sub_lst then (acc1, r) else helper sub_lst (acc1 @ [hd acc2]) (tl acc2)
-    	end
-    else ([],[])
-
-
-let splitR sub_lst lst = helper #symbol sub_lst [] lst
-*)
-
-
-(*
 // something like oracle:
 
 let splitR sub_lst lst =
@@ -235,7 +210,7 @@ let rev_transform g =
     {g with rules = List.Tot.rev g.rules} 
 
 
-assume val ind_axiom: g1:cfg -> g2:cfg ->
+assume val induction_axiom: g1:cfg -> g2:cfg ->
     Lemma 
         (requires True) 
         (ensures 
@@ -248,13 +223,13 @@ assume val ind_axiom: g1:cfg -> g2:cfg ->
                         ==> (forall nsf. derives g1 [IntroL g1.start_symbol] nsf ==> derives g2 [IntroL g2.start_symbol] nsf)
                 )
          )
-
-val rev_tr_eq_Lemma: g1:cfg ->
+(*
+val rev_tr_eq_original_Lemma: g1:cfg ->
     Lemma 
         (requires True) 
         (ensures (g1 |=| rev_transform g1))
 
-let rec rev_tr_eq_Lemma g1 =
+let rev_tr_eq_original_Lemma g1 =
     let g2 = rev_transform g1 in
 
 
@@ -268,7 +243,7 @@ let rec rev_tr_eq_Lemma g1 =
             ==> derives g2 s1 (s2 @ right @ s3)
     );
 
-    ind_axiom g1 g2; 
+    induction_axiom g1 g2; 
     assert ( forall nsf. derives g1 [IntroL ss] nsf ==> derives g2 [IntroL ss] nsf);
 
     
@@ -277,7 +252,7 @@ let rec rev_tr_eq_Lemma g1 =
         List.Tot.mem (left, right) g2.rules /\ List.Tot.mem (left, right) g1.rules /\ derives g2 s1 (s2 @ [IntroL left] @ s3) /\ derives g1 s1 (s2 @ [IntroL left] @ s3) 
             ==> derives g1 s1 (s2 @ right @ s3)
     );
-    ind_axiom g2 g1; 
+    induction_axiom g2 g1; 
     assert ( forall nsf. derives g2 [IntroL ss] nsf ==> derives g1 [IntroL ss] nsf);
 
 
@@ -288,4 +263,15 @@ let rec rev_tr_eq_Lemma g1 =
     assert ( forall sent. produces g1 sent <==> produces g2 sent );
     assert ( g1 |=| g2 );
     ()
+*)
 
+
+val rev_tr_eq_mini_Lemma: g1:cfg ->
+    Lemma 
+        (requires True) 
+        (ensures (g1 |=| rev_transform g1))
+
+let rev_tr_eq_mini_Lemma g1 =
+    induction_axiom g1 (rev_transform g1); 
+    induction_axiom (rev_transform g1) g1;
+    ()
