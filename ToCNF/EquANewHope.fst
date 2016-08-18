@@ -275,3 +275,106 @@ let rev_tr_eq_mini_Lemma g1 =
     induction_axiom g1 (rev_transform g1); 
     induction_axiom (rev_transform g1) g1;
     ()
+
+
+let isSingle (rule: (nonterm * sf)) =
+    match rule with
+    | _, [IntroR _] -> true
+    | _ -> false
+
+let isToken (elem: symbol) =
+    match elem with
+    | IntroL _ -> false
+    | IntroR _ -> true
+
+//TODO: nt + t --> 
+let getNewText (elem: term): string =
+    match elem with
+    | T s-> "New_" ^ s
+
+let renameElem (rule: nonterm * sf) (elem: symbol) : (symbol * (list (nonterm * sf))) =
+	match elem with
+    | IntroR t -> IntroL (NT ( getNewText t ) ) , [ ( NT ( getNewText t ), [ elem ] ) ] 
+    | IntroL n -> elem, []
+
+
+let renameRule (rule: nonterm * sf) : ( list (nonterm * sf) ) =
+	let res = List.Tot.map (renameElem rule) (snd rule) in
+	match rule with
+	| (l,r) -> (l, List.Tot.map fst res):: List.Tot.concatMap snd res
+
+let normalizeRule (rule: nonterm * sf) : ( list (nonterm * sf) ) =
+	if isSingle rule then [rule] else renameRule rule
+
+
+
+let renameTerms (g: cfg) = {
+  start_symbol = g.start_symbol;
+  rules = List.Tot.concatMap  normalizeRule g.rules
+}
+
+(* TODO:
+Lemma derives_trans (g: cfg) (s1 s2 s3: sf):
+	derives g s1 s2 ->
+	derives g s2 s3 ->
+	derives g s1 s3
+*)
+
+(*
+	Definition short_rules (g: cfg) :=
+	  forall left right, 
+	In (left, right) (rules g) -> length right <= 2.
+*)
+
+
+val alg_prop_1: g:cfg -> left:nonterm -> r_single:symbol ->
+    Lemma 
+        (requires (List.Tot.mem (left, [r_single]) g.rules )) 
+        (ensures (List.Tot.mem (left, [r_single]) (renameTerms g).rules ))
+
+let alg_prop_1 g left r_single = 
+	
+	assume ( 
+
+List.Tot.mem (left, [r_single]) 
+
+({
+  start_symbol = g.start_symbol;
+  rules = List.Tot.concatMap  normalizeRule g.rules
+}).rules
+
+);
+
+
+	assert ( List.Tot.mem (left, [r_single]) (renameTerms g).rules );
+	()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
