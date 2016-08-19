@@ -65,7 +65,6 @@ Proof.
 Definition g1 := {|
   start_symbol := NT "A";
   rules := r1
-  (* rules_short := short_r1 *)
 |}.
 
 Lemma test_0:
@@ -159,54 +158,74 @@ Proof.
 Lemma lemma_1:
   forall (A: Type) (x: A) (l1: list A) (l2: list A),
   In x (l1 ++ l2) <-> In x l1 \/ In x l2.
-Proof. Admitted.
+Proof.
+  intros. generalize dependent l2.
+  induction l1.
+  - simpl.
+    split.
+    + intros. right. assumption.
+    + intros. destruct H. inversion H. assumption.
+  - simpl. split.
+    + intros. destruct H.
+      * left. left. assumption.
+      *  apply IHl1 in H. destruct H. left. right. assumption. right. assumption.
+    + intros. destruct H. 
+      * destruct H. left. assumption. right. apply IHl1. left. assumption.
+      * right. apply IHl1. right. assumption.
+Qed.
 
 Lemma test_49:
   forall (A:Type) (f: A -> list A) (x:A) (xs: list A),
-  f x = [x] ->
-  (In x xs <-> In x (flat_map f xs)).
+    f x = [x] ->
+    In x xs ->
+    In x (flat_map f xs).
 Proof.
-  intros. split.
-  - intros.
-    induction xs.
+  intros. induction xs.
     + inversion H0.
-    + assert ({x = a} + {x <> a}) as Eq. admit. destruct Eq.
-      * subst. simpl. rewrite H. simpl. left. reflexivity.
-      * simpl.
-        assert (a :: xs = [a] ++ xs). simpl. reflexivity. rewrite H1 in H0.
-        apply lemma_1 in H0.
-          destruct H0.
-          -- inversion H0. subst. (* x <> x *) admit. inversion H2.
-          -- apply lemma_1 with (x := x) (l1 := (f a)) (l2 := (flat_map f xs)). 
-              right. apply IHxs in H0. assumption.
-  - intros.
-    induction xs.
-    + simpl in H0. inversion H0.
-    + assert ({x = a} + {x <> a}) as Eq. admit. destruct Eq. 
-      * subst. simpl. left. reflexivity.
-      * simpl in H0. apply lemma_1 with (x := x) (l1 := (f a)) (l2 := (flat_map f xs)) in H0.
-        destruct H0.
-        induction f. inversion H. apply IHl. admit. (* f -- injection ? *)
-        
-        simpl. right. apply IHxs. assumption.
+    + simpl. apply lemma_1. assert (a :: xs = [a] ++ xs). simpl. reflexivity. rewrite H1 in H0.
+      apply lemma_1 in H0.
+      destruct H0.
+      * inversion H0. subst. left. rewrite H. assumption. simpl. inversion H2.
+      * right. apply IHxs. assumption.
+Qed.
 
-   Admitted.
+Lemma test_50:
+  forall (A:Type) (f: A -> list A) (x:A) (xs: list A),
+    f x = [x] ->
+    (forall x', In x (f x') -> x = x') ->
+    In x (flat_map f xs) ->
+    In x xs.
+Proof.
+  intros. induction xs.
+  - inversion H1.
+  - simpl in H1. apply lemma_1 in H1. destruct H1.
+    + apply H0 in H1. subst. simpl. left. reflexivity.
+    + simpl. right. apply IHxs. assumption.
+Qed.
+
+
+Lemma lemma_3 :
+  forall left x,
+    In (left, []) (normalizeRule x) -> (left, []) = x.
+Proof. Admitted.
 
 Lemma test_47:
   forall left rules,
   In (left,[]) rules <-> In (left,[]) (flat_map normalizeRule rules).
 Proof.
-  intros. split. 
+  intros. split.
   - apply test_49. reflexivity.
-  - apply test_49. reflexivity. Qed.
+  - apply test_50. reflexivity. apply lemma_3. Qed.
 
 Lemma test_51:
   forall left single rules,
   In (left, [single]) (flat_map normalizeRule rules) <-> In (left,[single]) rules.
 Proof.
   intros. split.
-  - apply test_49. apply test_46.
-  - apply test_49. apply test_46. Qed.
+  - apply test_50.
+    + apply test_46.
+    + admit.
+  - apply test_49. apply test_46. Admitted.
 
 
 Definition renameTerms (g: cfg) := {|
@@ -258,14 +277,6 @@ Proof.
   + inversion_clear H0. admit. inversion H1.
   + Admitted. *)
 
-(* Theorem derives_rule:
-forall g: cfg,
-forall left: nt,
-forall right s1 s2: sf,
-In (left,right) (rules g) ->
-derives g (s1 ++ [inl left] ++ s2) (s1 ++ right ++ s2).
-Proof. Admitted. *)
-
 
 Lemma custom_ass_1: forall (A:Type) (c1 c2: A) (s1 s2: list A), 
 (s1 ++ [c1]) ++ [c2] ++ s2 = s1 ++ [c1; c2] ++ s2 .
@@ -286,7 +297,7 @@ Lemma Alg_prop_1:
 Proof.
   split.
   - apply test_49. apply test_45.
-  - apply test_49. apply test_45. Qed.
+  - apply test_47. Qed.
 
 Lemma Alg_prop_2:
   forall g left r_single,
@@ -295,7 +306,7 @@ Lemma Alg_prop_2:
 Proof.
   split.
   - apply test_49. apply test_46.
-  - apply test_49. apply test_46. Qed.
+  - apply test_51. Qed.
 
 Lemma Alg_prop_3:
   forall g left n0 n1,
@@ -305,9 +316,8 @@ Proof.
   split.
   - apply test_49.
     unfold normalizeRule. simpl. reflexivity.
-  - apply test_49.
-    unfold normalizeRule. simpl. reflexivity.
-Qed.
+  - apply test_50. unfold normalizeRule. simpl. reflexivity.
+    admit. Admitted.
 
 Lemma Alg_prop_4:
   forall g left n s0,
@@ -332,8 +342,9 @@ Proof. Admitted.
 Lemma Alg_prop_7:
 forall g left n0 t0,
   ~ In (left, [inl n0; inr t0]) (rules (renameTerms g)).
-Proof. Admitted.
-
+Proof.
+  intros g left n0 t
+ Admitted.
 
 Lemma Alg_prop_8:
 forall g left t0 n0,
@@ -344,6 +355,8 @@ Lemma Alg_prop_9:
 forall g left t0 t1,
   ~ In (left, [inr t0; inr t1]) (rules (renameTerms g)).
 Proof. Admitted.
+
+
 
 (* TODO:  form. *)
 Theorem eq_rename:
@@ -466,3 +479,22 @@ unfold g_equiv. unfold produces. unfold generates. unfold short_rules. simpl. sp
   apply <- Alg_prop_1. assumption.
   inversion H7. 
 Qed.
+
+
+(* 
+Theorem eq_rename:
+  forall g,
+      g_equiv g (renameTerms g).
+Proof.
+  unfold g_equiv. unfold produces. unfold generates. unfold short_rules. simpl. split.
+  - intros. induction H.
+    + apply derives_refl.
+    + generalize dependent s1. generalize dependent s2. generalize dependent s3. induction right. intros.
+      * apply derives_step with (left := left). assumption. apply test_49. reflexivity. assumption.
+      * intros.
+        apply derives_step with (right := a :: right) in H.
+        replace (s2 ++ (a :: right) ++ s3) with ((s2 ++ [a]) ++ right ++ s3).
+        apply IHright with (s1 := s1) (s2 := s2 ++ [a]) (s3 := s3).
+         admit.
+        assumption.
+Admitted. *)
