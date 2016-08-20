@@ -241,10 +241,7 @@ Lemma lemma_15:
 Proof.
   intros l r H.
   induction r. reflexivity.
-    simpl in H. destruct H. admit. admit. admit.
-      
-  unfold renameRule in H.
-Admitted.
+    simpl in H. destruct H. admit. admit. Admitted.
 
 Lemma test_46:
   forall l1 r1 l s r,
@@ -286,13 +283,13 @@ Proof.
   intros. destruct x. (*  destruct s. *) induction s.
   - simpl in H. destruct H. auto. inversion H.
   - destruct a. simpl in H. destruct H. inversion H. inversion H3. simpl in IHs.
-    + destruct a. simpl in H. destruct H. auto. inversion H. simpl in H. destruct H. inversion H. inversion H.
+    + (* destruct a. simpl in H. destruct H. auto. inversion H. simpl in H. destruct H. inversion H. inversion H.
     + destruct a; destruct s.
       * simpl in H. destruct H. inversion H. simpl in IHs. apply IHs with in H. admit.
       * simpl in H. destruct H. inversion H. destruct H. inversion H. admit.
       * simpl in H. destruct H. inversion H. destruct H. inversion H. admit.
-      * simpl in H. destruct H. inversion H. destruct H. inversion H. destruct H. inversion H. admit.
-    
+      * simpl in H. destruct H. inversion H. destruct H. inversion H. destruct H. inversion H. admit. *)
+    auto.
 Admitted.
 
 Lemma lemma_7 :
@@ -303,7 +300,7 @@ Proof.
   - simpl in H. destruct H. auto. inversion H.
   - destruct s0.
     + destruct s. simpl in H. destruct H. auto. inversion H. simpl in H. destruct H. auto. inversion H.
-    + assert (H' := H). apply lemma_4 in H. destruct H. inversion H. destruct s. simpl in H'.  admit.
+    + assert (H' := H). (* apply lemma_4 in H. destruct H. inversion H. destruct s. simpl in H'.  admit. *)
 Admitted.
 
 
@@ -317,7 +314,7 @@ Lemma lemma_8 :
     In (left, [inl (NT ("_" ++ s0)); inl (NT ("_" ++ s1))]) (normalizeRule x) -> (left, [inl (NT ("_" ++ s0)); inl (NT ("_" ++ s1))]) = x.
 Proof.
    intros left x ns0 ns1 H. destruct x. destruct s.
-  - apply lemma_4 in H. destruct H. inversion H. inversion H.
+  - (* apply lemma_4 in H. destruct H. inversion H. inversion H.
   - destruct s0.
     + apply lemma_4 in H. destruct H. inversion H. inversion H.
     + destruct s1.
@@ -326,7 +323,7 @@ Proof.
         -- simpl in H. destruct H. inversion H. admit. admit.
         -- admit.
         -- admit.
-      * apply lemma_4 in H. destruct H. inversion H. inversion H. Admitted.
+      * apply lemma_4 in H. destruct H. inversion H. inversion H. *) Admitted.
 
 
 
@@ -455,6 +452,37 @@ Proof.
     + inversion H.
     + assumption.
 Qed.
+
+
+Definition isNonterm (el: nt + t) :=
+  match el with
+  | inl _ => True
+  | inr _ => False
+  end.
+  
+(* if isSingle rule0
+       then [rule0]
+       else renameRule rule0 *)
+
+Lemma lemma_16:
+  forall rule l r,
+    In (l,r) (normalizeRule rule) ->
+      (forall el, In el r -> isNonterm el) \/ (length r = 1).
+Proof.
+  intros.
+    (* unfold normalizeRule in H. *) destruct rule0. induction s.
+    - simpl in H. destruct H. inversion H. subst. left. intros. inversion H0. inversion H.
+    - destruct a. 
+      + simpl in H. destruct H.
+        * inversion H. admit.
+        * admit.
+      + simpl in H.   simpl. 
+       unfold normalizeRule in H. destruct isSingle in H.    left. intros. unfold isNonterm. admit.
+  right.
+
+
+
+
 
 Lemma lemma_11:
   forall rule left n0 t0,
