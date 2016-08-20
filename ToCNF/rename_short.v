@@ -66,17 +66,22 @@ Definition getNewText (elem: t): string :=
   | T s => "New_" ++ s
   end.
 
-Definition renameElem (elem: nt + t) : ((nt + t) * (list (nt *sf))) :=
+
+Definition renameElem1 (elem: nt + t) : ((nt + t)) :=
   match elem with
-  | inr t => ( inl (NT ( getNewText t ) ) , [ ( NT ( getNewText t ), [ elem ] ) ] )
-  | inl _ => ( elem, [] )
+  | inr t => inl (NT ( getNewText t ) ) 
+  | inl _ => elem
+  end.
+Definition renameElem2 (elem: nt + t) : ((list (nt *sf))) :=
+  match elem with
+  | inr t => (  [ ( NT ( getNewText t ), [ elem ] ) ] )
+  | inl _ => ( [] )
   end.
 
 
 Definition renameRule (rule: nt * sf) : ( list (nt * sf) ) :=
-  let res := map renameElem (snd rule) in
 	match rule with
-	| (l,r) => (l, map fst res):: flat_map snd res
+	| (l,r) => (l, map renameElem1 (snd rule)) :: flat_map renameElem2 (snd rule)
   end.
 
 Definition normalizeRule (rule: nt * sf) : ( list (nt * sf) ) :=
@@ -172,201 +177,10 @@ Lemma arrow_disj_lemma: forall (A B C: Prop),
   (A -> C) /\ (B -> C).
 Proof. intros. split; auto. Qed.
 
-(* ---------------------------------------------------------------------------------- *)
-
-Lemma norm_eps_lemma:
-  forall left,
-  normalizeRule (left,[]) = [(left,[])].
-Proof. intros. reflexivity. Qed.
-
-Lemma norm_single_lemma:
-  forall left single,
-  normalizeRule (left,[single]) = [(left,[single])].
+Lemma destr_isSingle_lemma:
+  forall x, { isSingle x = true } + { isSingle x = false}.
 Proof.
-  intros. destruct single. reflexivity. reflexivity. Qed.
-
-Lemma norm_2nonterm_lemma:
-  forall left n0 n1,
-  normalizeRule (left, [inl n0; inl n1]) = [(left, [inl n0; inl n1])].
-Proof. intros. reflexivity. Qed.
-
-
-
-
-
-(* Lemma lemma_4:
-  forall left right leftN rightN,
-    In (leftN,rightN) (normalizeRule (left,right)) -> length right = length rightN \/ length rightN = 1.
-Proof.
-  intros. induction right.
-  - inversion H. simpl in H0. inversion H0. left. reflexivity. inversion H0.
-  - 
-Admitted. *)
-
-
-
-(* Lemma lemma_14:
-  forall l1 r1 l2 r2,
-    r2 <> [] ->
-    In (l1, r1) (normalizeRule (l2,r2)) -> length r1 > 0.
-Proof.
-  intros.
-  unfold normalizeRule in H0. destruct isSingle in H0. 
-  - inversion H0. inversion H1. subst. destruct r1. admit (* [] <> [] *). simpl. admit (* S () > 0 *). inversion H1.
-  - induction r2.
-    + admit (* [] <> [] *).
-    + apply IHr2.
-      * destruct a.  admit.
-      * admit.
-Qed. *)
-
-(* Definition f (n:nat) :=
-  match n with 
-  | 0 => [0]
-  | n => [n; n + 1]
-  end
-.
-
-Lemma lemma_5:
-  forall n, In 0 (f n) -> 0 = n.
-Proof.
-  intros. destruct n.
-    reflexivity.
-    simpl in H. destruct H. auto. destruct H. inversion H. inversion H. Qed.
- *)
- 
-Lemma lemma_15:
-  forall l r ,
-    In (l, []) (renameRule (l, r)) -> r = [].
-Proof.
-  intros l r H.
-  induction r. reflexivity.
-    simpl in H. destruct H. admit. admit. Admitted.
-
-Lemma test_46:
-  forall l1 r1 l s r,
-    In (l1,r1) (renameRule (l, s::r)) -> length r1 > 0.
-Proof.
-  intros.
-    destruct r1.
-      
-    simpl. admit.
-
-
-
-Admitted.
-
-
-Lemma lemma_5:
-  forall left rule,
-    In (left, []) (normalizeRule rule) -> (left, []) = rule.
-Proof.
-  intros.
-  unfold normalizeRule in H. destruct isSingle in H.
-  - inversion H. auto. inversion H0.
-  - destruct rule0 as (l,r). destruct r.
-    + simpl in H. destruct H. auto. inversion H.
-    + apply test_46 in H. inversion H. (* unfold renameRule in H. unfold renameRule in IHr. simpl in H. simpl in IHr.
-      destruct H. inversion H.
-      apply concat_in_lemma in H. destruct H. admit.
-      apply arrow_disj_lemma in IHr. destruct IHr. apply H1 in H. 
-      apply IHr in H.
-    
-    replace (a :: r) with ([a] ++ r) in H. apply concat_in_lemma in H. destruct a. simpl in H. destruct H. inversion H. unfold normalizeRule in IHr. destruct isSingle in IHr. inversion H. *)
-Qed.
-
-
-Lemma lemma_6 :
-  forall left nt0 x,
-    In (left,[inl nt0]) (normalizeRule x) -> (left,[inl nt0]) = x.
-Proof.
-  intros. destruct x. (*  destruct s. *) induction s.
-  - simpl in H. destruct H. auto. inversion H.
-  - destruct a. simpl in H. destruct H. inversion H. inversion H3. simpl in IHs.
-    + (* destruct a. simpl in H. destruct H. auto. inversion H. simpl in H. destruct H. inversion H. inversion H.
-    + destruct a; destruct s.
-      * simpl in H. destruct H. inversion H. simpl in IHs. apply IHs with in H. admit.
-      * simpl in H. destruct H. inversion H. destruct H. inversion H. admit.
-      * simpl in H. destruct H. inversion H. destruct H. inversion H. admit.
-      * simpl in H. destruct H. inversion H. destruct H. inversion H. destruct H. inversion H. admit. *)
-    auto.
-Admitted.
-
-Lemma lemma_7 :
-  forall left t0 x,
-    In (left,[inr t0]) (normalizeRule x) -> (left,[inr t0]) = x.
-Proof.
-  intros. destruct x. destruct s.
-  - simpl in H. destruct H. auto. inversion H.
-  - destruct s0.
-    + destruct s. simpl in H. destruct H. auto. inversion H. simpl in H. destruct H. auto. inversion H.
-    + assert (H' := H). (* apply lemma_4 in H. destruct H. inversion H. destruct s. simpl in H'.  admit. *)
-Admitted.
-
-
-(* Lemma lemma_8 :
-  forall left n0 n1 x s0 s1,
-   (*  (n0 <> NT ("New_" ++ s0)) -> (n1 <> NT ("New_" ++ s1)) -> *)
-    In (left, [inl n0; inl n1]) (normalizeRule x) -> (left, [inl n0; inl n1]) = x. *)
-Lemma lemma_8 :
-  forall left x s0 s1,
-   (*  (n0 <> NT ("New_" ++ s0)) -> (n1 <> NT ("New_" ++ s1)) -> *)
-    In (left, [inl (NT ("_" ++ s0)); inl (NT ("_" ++ s1))]) (normalizeRule x) -> (left, [inl (NT ("_" ++ s0)); inl (NT ("_" ++ s1))]) = x.
-Proof.
-   intros left x ns0 ns1 H. destruct x. destruct s.
-  - (* apply lemma_4 in H. destruct H. inversion H. inversion H.
-  - destruct s0.
-    + apply lemma_4 in H. destruct H. inversion H. inversion H.
-    + destruct s1.
-      * destruct s; destruct s0.
-        -- simpl in H. destruct H. auto. inversion H.
-        -- simpl in H. destruct H. inversion H. admit. admit.
-        -- admit.
-        -- admit.
-      * apply lemma_4 in H. destruct H. inversion H. inversion H. *) Admitted.
-
-
-
-
-Lemma test_47:
-  forall left rules,
-  In (left,[]) rules <-> In (left,[]) (flat_map normalizeRule rules).
-Proof.
-  intros. split.
-  - apply flat_map_lemma_1. reflexivity.
-  - apply flat_map_lemma_2. reflexivity. apply lemma_5. Qed.
-
-Lemma test_52:
-  forall left single rules,
-  In (left, [single]) (flat_map normalizeRule rules) <-> In (left,[single]) rules.
-Proof.
-  intros. split.
-  - apply flat_map_lemma_2.
-    + apply norm_single_lemma.
-    + admit.
-  - apply flat_map_lemma_1. apply norm_single_lemma. Admitted.
-
-Lemma test_53:
-  forall left n0 n1 rules,
-  In (left, [inl n0; inl n1]) (flat_map normalizeRule rules) <-> In (left, [inl n0; inl n1]) rules.
-Proof.
-  intros. split.
-  - apply flat_map_lemma_2.
-    + apply norm_2nonterm_lemma.
-    + admit.
-  - apply flat_map_lemma_1. apply norm_2nonterm_lemma. Admitted.
-
-
-Definition renameTerms (g: cfg) := {|
-  start_symbol := start_symbol g;
-  rules := flat_map normalizeRule (rules g)
-|}.
-
-
-Definition short_rules (g: cfg) :=
-  forall left right, 
-    In (left, right) (rules g) -> length right <= 2.
-
+  intros. destruct x. destruct s; auto. destruct s; auto. destruct s0; auto. Qed.
 
 Lemma custom_ass_1: forall (A:Type) (c1 c2: A) (s1 s2: list A), 
 (s1 ++ [c1]) ++ [c2] ++ s2 = s1 ++ [c1; c2] ++ s2 .
@@ -380,32 +194,257 @@ Lemma custom_ass_3: forall (A:Type) (c1 c2: A) (s1 s2: list A),
 (s1 ++ [c1]) ++ c2 :: s2 = s1 ++ [c1; c2] ++ s2.
 Proof. intros. simpl. apply custom_ass_1. Qed.
 
+(* ---------------------------------------------------------------------------------- *)
+
+Lemma invar_eps_lemma:
+  forall left,
+  normalizeRule (left,[]) = [(left,[])].
+Proof. intros. reflexivity. Qed.
+
+
+Lemma invar_single_lemma:
+  forall left single,
+  normalizeRule (left,[single]) = [(left,[single])].
+Proof.
+  intros. destruct single. reflexivity. reflexivity. Qed.
+
+
+Lemma invar_2nonterm_lemma:
+  forall left n0 n1,
+  normalizeRule (left, [inl n0; inl n1]) = [(left, [inl n0; inl n1])].
+Proof. intros. reflexivity. Qed.
+
+
+Lemma h_integr_eps:
+  forall left rule,
+    In (left, []) (renameRule rule) -> rule = (left,[]).
+Proof.
+  intros. destruct rule0. destruct s.
+  - simpl in H. destruct H. assumption. inversion H.
+  - simpl in H. destruct H.
+    + inversion H.
+    + apply concat_in_lemma in H. destruct H.
+      * destruct s.
+        -- simpl in H. inversion H. 
+        -- simpl in H. destruct H. inversion H. inversion H.
+      * induction s0. simpl in H. inversion H. destruct a.
+        -- simpl in H. apply IHs0 in H. inversion H.
+        -- simpl in H. destruct H. inversion H. apply IHs0 in H. inversion H.
+Qed.
+
+Lemma integr_eps_lemma:
+  forall left rule,
+    In (left, []) (normalizeRule rule) -> (left, []) = rule.
+Proof.
+  intros.
+  unfold normalizeRule in H. destruct isSingle in H.
+  - inversion H. auto. inversion H0.
+  - destruct rule0. apply h_integr_eps in H. inversion H. reflexivity. 
+Qed.
+
+
+Lemma hh_integr_nt_sinle:
+  forall left nt0 elems,
+  ~ In (left, [inl nt0]) (flat_map renameElem2 elems).
+Proof. 
+  intros left nt0 elems contra. induction elems.
+  - inversion contra.
+  - simpl in contra. apply concat_in_lemma in contra. destruct contra.
+    + destruct a.  inversion H. inversion H. inversion H0. inversion H0.
+    + apply IHelems in H. inversion H.
+Qed.
+
+Lemma h_integr_nt_sinle:
+  forall left nt0 rule,
+    In (left,[inl nt0]) (renameRule rule) -> isSingle rule = false -> (left,[inl nt0]) = rule.
+Proof.
+  intros. destruct rule0. destruct H.
+  - inversion H. subst.
+      destruct s. inversion H3.
+      destruct s0. destruct s. simpl. reflexivity. inversion H3. inversion H0. inversion H3. 
+  - apply hh_integr_nt_sinle in H. inversion H.
+Qed.
+
+Lemma integr_nt_sinle_lemma :
+  forall left nt0 x,
+    In (left,[inl nt0]) (normalizeRule x) -> (left,[inl nt0]) = x.
+Proof.
+  intros. unfold normalizeRule in H. edestruct destr_isSingle_lemma; rewrite e in H.
+  - inversion H. auto. inversion H0.
+  - apply h_integr_nt_sinle. assumption. assumption. Qed.
+
+
+Lemma hh_integr_t_sinle:
+  forall name t0 elems,
+  (forall s, name <> append "New_" s) ->
+  ~ In (NT name, [inr t0]) (flat_map renameElem2 elems).
+Proof.
+  intros t0 s0 elems KN contra.
+  induction elems.
+  - inversion contra.
+  - simpl in contra. apply concat_in_lemma in contra. destruct contra.
+    + destruct a.
+      * inversion H.
+      * inversion H. inversion H0. destruct t1. simpl in H2. unfold not in KN. symmetry in H2.
+        apply KN in H2. inversion H2. simpl in KN. inversion H0.
+    + apply IHelems in H. inversion H.
+Qed.
+
+Lemma h_integr_t_sinle:
+  forall (left:nt) (t0:t) (elems: list (nt + t)),
+  (forall s, left <> NT ("New_" ++ s)) ->
+  ~ In (left, [inr t0]) (flat_map renameElem2 elems).
+Proof.
+  intros.
+  destruct left. apply hh_integr_t_sinle. unfold not in *. intros. 
+  assert (H' := H). apply H with (s0 := s0). subst. reflexivity.
+Qed.
+
+Lemma integr_t_sinle_lemma :
+  forall left t0 x,
+    (forall s, left <> NT ("New_" ++ s)) ->
+    In (left,[inr t0]) (normalizeRule x) -> (left,[inr t0]) = x.
+Proof.
+  intros. unfold normalizeRule in H0. destruct isSingle.
+  - inversion H0. auto. inversion H1.
+  - intros. destruct x. destruct H0.
+    + inversion H0. subst.
+        destruct s. inversion H3.
+        destruct s0. destruct s. simpl. reflexivity. inversion H3. inversion H0.
+    + simpl in H0. apply h_integr_t_sinle in H0. inversion H0. assumption. Qed.
+
+
+Lemma integr_sinlge_lemma :
+  forall left single rule,
+    (forall s, left <> NT ("New_" ++ s)) ->
+    In (left, [single]) (normalizeRule rule) ->
+    (left, [single]) = rule.
+Proof.
+  intros.
+  destruct single.
+    apply integr_nt_sinle_lemma. assumption.
+    apply integr_t_sinle_lemma. assumption. assumption.
+Qed.
+
+
+Lemma h_integr_nt_nt:
+  forall rule elems,
+    length (snd rule) >= 2 -> ~ In rule (flat_map renameElem2 elems).
+Proof.
+  unfold not. intros.
+  destruct rule0. simpl in H.
+  induction elems.
+  - inversion H0.
+  - simpl in H0. apply concat_in_lemma in H0. destruct H0.
+    + destruct a.
+      * inversion H0.
+      * simpl in H0. destruct H0.
+        -- inversion H0. subst. inversion H. inversion H2.
+        -- inversion H0.
+    + apply IHelems in H0. inversion H0. Qed.
+
+Lemma integr_nt_nt_lemma:
+  forall left n0 n1 rule,
+    (forall s, left <> NT ("New_" ++ s)) ->
+    (forall s, n0 <> NT ("New_" ++ s)) ->
+    (forall s, n1 <> NT ("New_" ++ s)) ->
+    In (left, [inl n0; inl n1]) (normalizeRule rule) ->
+    (left, [inl n0; inl n1]) = rule.
+Proof.
+  intros left n0 n1 rule NL N0 N1 H.
+  unfold normalizeRule in H. destruct isSingle.
+  - destruct H. auto. inversion H.
+  - destruct rule. simpl in H. destruct H.
+    + inversion H.
+      destruct s. inversion_clear H.
+      destruct s0. inversion_clear H.
+      destruct s1. inversion H2.
+        destruct s; destruct s0.
+        * simpl. reflexivity.
+        * simpl in H4. inversion H4. symmetry in H5. destruct t0. simpl in H5. apply N1 in H5. inversion H5.
+        * simpl in H3. inversion H3. symmetry in H5. destruct t0. simpl in H5. apply N0 in H5. inversion H5.
+        * simpl in H3. inversion H3. symmetry in H5. destruct t0. simpl in H5. apply N0 in H5. inversion H5.
+        * inversion H2.
+    + apply h_integr_nt_nt in H. inversion H. simpl. auto. Qed.
+
+(* Definition isNt (el : nt + t) :=
+  match el with
+  | inl _ => True
+  | inr _ => False
+  end.
+  
+Lemma Kek_integr_nt_nt_lemma:
+  forall left (right: sf) (rule: nt * sf),
+    (forall s, left <> NT ("New_" ++ s)) ->
+    (forall nt s, In nt right -> nt <> inl (NT ("New_" ++ s))) ->
+    (forall r, In r right -> isNt r) ->
+    In (left, right) (normalizeRule rule) ->
+    (left, right) = rule.
+Proof.
+  intros left right rule NL NR NT H.
+  unfold normalizeRule in H. destruct isSingle.
+  - destruct H. auto. inversion H.
+  - induction right.
+    + symmetry. apply h_integr_eps. assumption.
+    +  
+   destruct rule. simpl in H. destruct H.
+    + inversion H.
+      destruct s. inversion_clear H.
+      destruct s0. inversion_clear H.
+      destruct s1. inversion H2.
+        destruct s; destruct s0.
+        * simpl. reflexivity.
+        * simpl in H4. inversion H4. symmetry in H5. destruct t0. simpl in H5. apply N1 in H5. inversion H5.
+        * simpl in H3. inversion H3. symmetry in H5. destruct t0. simpl in H5. apply N0 in H5. inversion H5.
+        * simpl in H3. inversion H3. symmetry in H5. destruct t0. simpl in H5. apply N0 in H5. inversion H5.
+        * inversion H2.
+    + apply h_integr_nt_nt in H. inversion H. simpl. auto. Qed. *)
+
+Definition renameTerms (g: cfg) := {|
+  start_symbol := start_symbol g;
+  rules := flat_map normalizeRule (rules g)
+|}.
+
+Definition short_rules (g: cfg) :=
+  forall left right, 
+    In (left, right) (rules g) -> length right <= 2.
+
+
 Lemma Alg_prop_1:
   forall g left,
   In (left, []) (rules g) <->
   In (left, []) (rules (renameTerms g)).
 Proof.
-  split.
-  - apply flat_map_lemma_1. apply norm_eps_lemma.
-  - apply test_47. Qed.
+  intros. split.
+  - apply flat_map_lemma_1. reflexivity.
+  - apply flat_map_lemma_2. reflexivity. apply integr_eps_lemma. Qed.
 
 Lemma Alg_prop_2:
   forall g left r_single,
+  (forall s, left <> NT ("New_" ++ s)) ->
   In (left, [r_single]) (rules g) <->
   In (left, [r_single]) (rules (renameTerms g)).
 Proof.
-  split.
-  - apply flat_map_lemma_1. apply norm_single_lemma.
-  - apply test_52. Qed.
+  intros. split.
+  - apply flat_map_lemma_1. apply invar_single_lemma.
+  - apply flat_map_lemma_2.
+    + apply invar_single_lemma.
+    + intros. apply integr_sinlge_lemma. assumption. assumption. Qed.
 
 Lemma Alg_prop_3:
   forall g left n0 n1,
-  In (left, [inl n0; inl n1]) (rules g) <->
-  In (left, [inl n0; inl n1]) (rules (renameTerms g)).
+    (forall s, left <> NT ("New_" ++ s)) ->
+    (forall s, n0 <> NT ("New_" ++ s)) ->
+    (forall s, n1 <> NT ("New_" ++ s)) ->
+    In (left, [inl n0; inl n1]) (rules g) <->
+    In (left, [inl n0; inl n1]) (rules (renameTerms g)).
 Proof.
-  split.
-  - apply flat_map_lemma_1. apply norm_2nonterm_lemma.
-  - apply flat_map_lemma_2. apply norm_2nonterm_lemma. Admitted.
+  intros. split.
+  - apply flat_map_lemma_1. apply invar_2nonterm_lemma.
+  - apply flat_map_lemma_2.
+    + apply invar_2nonterm_lemma.
+    + intros. apply integr_nt_nt_lemma; assumption.
+  Qed.
 
 Lemma Alg_prop_4:
   forall g left n s0,
@@ -441,28 +480,12 @@ Proof.
 Qed.
 
 
-Lemma lemma_10:
-  forall left n0 t0,
-    ~ In (left, [inl n0; inr t0]) (normalizeRule (left, [inl n0; inr t0])).
-Proof.
-  intros left n0 t0 H.
-  simpl in H. destruct H.
-  - inversion H.
-  - destruct H.
-    + inversion H.
-    + assumption.
-Qed.
 
-
-Definition isNonterm (el: nt + t) :=
+(* Definition isNonterm (el: nt + t) :=
   match el with
   | inl _ => True
   | inr _ => False
   end.
-  
-(* if isSingle rule0
-       then [rule0]
-       else renameRule rule0 *)
 
 Lemma lemma_16:
   forall rule l r,
@@ -479,12 +502,12 @@ Proof.
       + simpl in H.   simpl. 
        unfold normalizeRule in H. destruct isSingle in H.    left. intros. unfold isNonterm. admit.
   right.
+Admitted.
+ *)
 
 
 
-
-
-Lemma lemma_11:
+(* Lemma lemma_11:
   forall rule left n0 t0,
     ~ In (left, [inl n0; inr t0]) (normalizeRule rule).
 Proof.
@@ -497,7 +520,7 @@ Proof.
       * admit. 
     + admit.
 Admitted.
-
+ *)
 
 Lemma lemma_9:
   forall left n0 t0 rules,
@@ -505,7 +528,14 @@ Lemma lemma_9:
 Proof.
   intros left n0 t0 rules contr. induction rules.
   - simpl in contr. assumption.
-  - apply IHrules. clear IHrules. destruct a. destruct s.
+  - destruct a. simpl in contr. apply concat_in_lemma in contr. destruct contr.
+    + induction s.
+      * inversion H. inversion H0. inversion H0.
+      * destruct a.
+        -- simpl in H. destruct H. simpl in H. inversion H. admit.
+           apply h_integr_nt_nt in H. inversion H. simpl. auto.
+        -- unfold normalizeRule in H. simpl in H. it.  simpl in H.
+    + apply IHrules. assumption.
 Admitted.
 
 Lemma lemma_12:
@@ -532,7 +562,6 @@ Lemma Alg_prop_9:
 forall g left t0 t1,
   ~ In (left, [inr t0; inr t1]) (rules (renameTerms g)).
 Proof. intros. apply lemma_13. Qed.
-
 
 
 (* TODO:  form. *)
@@ -624,9 +653,10 @@ unfold g_equiv. unfold produces. unfold generates. unfold short_rules. simpl. sp
     * inversion H3.
     * inversion H3. destruct right. inversion H5. destruct right. destruct s0.
       eapply derives_step. apply IHderives. apply -> Alg_prop_2. assumption.
+        admit. (* forall s0 : string, left <> NT ("New_" ++ s0) *)
 
       eapply derives_step. apply IHderives.  apply -> Alg_prop_2. assumption.
-
+        admit. (* forall s0 : string, left <> NT ("New_" ++ s0) *)
       inversion H5.
 
       inversion H5. destruct right.
@@ -649,10 +679,10 @@ unfold g_equiv. unfold produces. unfold generates. unfold short_rules. simpl. sp
   apply derives_step with (left := left). assumption.
 
   apply <- Alg_prop_2. assumption.
-
+    admit. (* forall s0 : string, left <> NT ("New_" ++ s0) *)
   inversion H5.
   inversion H5. destruct right. apply derives_step with (left := left). assumption.
 
   apply <- Alg_prop_1. assumption.
-  inversion H7. 
-Qed.
+  inversion H7.
+Admitted.
