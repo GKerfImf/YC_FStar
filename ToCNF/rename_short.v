@@ -1,5 +1,6 @@
 Require Import Coq.Strings.String.
 Require Import Coq.Init.Datatypes.
+Require Import Coq.Arith.EqNat.
 Require Import List.
 Import ListNotations.
 Open Scope list_scope.
@@ -194,6 +195,14 @@ Lemma custom_ass_3: forall (A:Type) (c1 c2: A) (s1 s2: list A),
 (s1 ++ [c1]) ++ c2 :: s2 = s1 ++ [c1; c2] ++ s2.
 Proof. intros. simpl. apply custom_ass_1. Qed.
 
+Lemma map_length:
+  forall (A B:Type) (f: A -> B) (xs: list A) (ys: list B),
+  map f xs = ys -> length xs = length ys.
+Proof.
+  debug auto.
+  intros. generalize dependent ys. 
+  induction xs; intros; inversion H; simpl in *; auto. Qed.
+
 (* ---------------------------------------------------------------------------------- *)
 
 Lemma invar_eps_lemma:
@@ -367,38 +376,6 @@ Proof.
         * inversion H2.
     + apply h_integr_nt_nt in H. inversion H. simpl. auto. Qed.
 
-(* Definition isNt (el : nt + t) :=
-  match el with
-  | inl _ => True
-  | inr _ => False
-  end.
-  
-Lemma Kek_integr_nt_nt_lemma:
-  forall left (right: sf) (rule: nt * sf),
-    (forall s, left <> NT ("New_" ++ s)) ->
-    (forall nt s, In nt right -> nt <> inl (NT ("New_" ++ s))) ->
-    (forall r, In r right -> isNt r) ->
-    In (left, right) (normalizeRule rule) ->
-    (left, right) = rule.
-Proof.
-  intros left right rule NL NR NT H.
-  unfold normalizeRule in H. destruct isSingle.
-  - destruct H. auto. inversion H.
-  - induction right.
-    + symmetry. apply h_integr_eps. assumption.
-    +  
-   destruct rule. simpl in H. destruct H.
-    + inversion H.
-      destruct s. inversion_clear H.
-      destruct s0. inversion_clear H.
-      destruct s1. inversion H2.
-        destruct s; destruct s0.
-        * simpl. reflexivity.
-        * simpl in H4. inversion H4. symmetry in H5. destruct t0. simpl in H5. apply N1 in H5. inversion H5.
-        * simpl in H3. inversion H3. symmetry in H5. destruct t0. simpl in H5. apply N0 in H5. inversion H5.
-        * simpl in H3. inversion H3. symmetry in H5. destruct t0. simpl in H5. apply N0 in H5. inversion H5.
-        * inversion H2.
-    + apply h_integr_nt_nt in H. inversion H. simpl. auto. Qed. *)
 
 Definition renameTerms (g: cfg) := {|
   start_symbol := start_symbol g;
@@ -481,46 +458,125 @@ Qed.
 
 
 
-(* Definition isNonterm (el: nt + t) :=
-  match el with
-  | inl _ => True
-  | inr _ => False
-  end.
 
-Lemma lemma_16:
-  forall rule l r,
-    In (l,r) (normalizeRule rule) ->
-      (forall el, In el r -> isNonterm el) \/ (length r = 1).
+(* -------------------------------------------------------------------------------- *)  
+(* -------------------- Ctrl+C Ctrl+V lemma --------------------------------------- *)
+(* -------------------------------------------------------------------------------- *)
+
+Lemma renameRule_progress_1_lemma:
+  forall left n0 t0 rule,
+    ~(In (left, [inl n0; inr t0]) (normalizeRule rule)).
 Proof.
-  intros.
-    (* unfold normalizeRule in H. *) destruct rule0. induction s.
-    - simpl in H. destruct H. inversion H. subst. left. intros. inversion H0. inversion H.
-    - destruct a. 
-      + simpl in H. destruct H.
-        * inversion H. admit.
-        * admit.
-      + simpl in H.   simpl. 
-       unfold normalizeRule in H. destruct isSingle in H.    left. intros. unfold isNonterm. admit.
-  right.
-Admitted.
- *)
+  intros left n0 t0 rule contr. destruct rule.
+  unfold normalizeRule in contr.
+  destruct destr_isSingle_lemma with (x := (n,s)); rewrite e in contr.
+  + inversion contr. inversion H. subst. simpl in e. congruence. inversion H.
+  + clear e. unfold renameRule in contr. destruct contr; simpl in H.
+    - inversion H. clear H H1. assert (H' := H2). apply map_length in H2.
+      destruct s. inversion H2. destruct s0. inversion H2. destruct s1.
+      * destruct s; destruct s0; simpl in H'; inversion H'. 
+      * inversion H2.
+    - induction s.
+      * inversion H.
+      * simpl in H. apply concat_in_lemma in H. destruct H.
+        ++ destruct a. simpl in H. inversion H. simpl in H. destruct H. inversion H. inversion H.  
+        ++ auto.
+Qed.
 
-
-
-(* Lemma lemma_11:
-  forall rule left n0 t0,
-    ~ In (left, [inl n0; inr t0]) (normalizeRule rule).
+Lemma renameRule_progress_2_lemma:
+  forall left t0 n0  rule,
+    ~(In (left, [inr t0; inl n0]) (normalizeRule rule)).
 Proof.
-  intros rule left n0 t0 H. destruct rule as (l,r).
-  destruct r.
-  - inversion H. simpl in H0. inversion H0. simpl in H0. assumption.
-  - destruct s.
-    + simpl in H. destruct H.
-      * inversion H. admit.
-      * admit. 
-    + admit.
-Admitted.
- *)
+  intros left n0 t0 rule contr. destruct rule.
+  unfold normalizeRule in contr.
+  destruct destr_isSingle_lemma with (x := (n,s)); rewrite e in contr.
+  + inversion contr. inversion H. subst. simpl in e. congruence. inversion H.
+  + clear e. unfold renameRule in contr. destruct contr; simpl in H.
+    - inversion H. clear H H1. assert (H' := H2). apply map_length in H2.
+      destruct s. inversion H2. destruct s0. inversion H2. destruct s1.
+      * destruct s; destruct s0; simpl in H'; inversion H'. 
+      * inversion H2.
+    - induction s.
+      * inversion H.
+      * simpl in H. apply concat_in_lemma in H. destruct H.
+        ++ destruct a. simpl in H. inversion H. simpl in H. destruct H. inversion H. inversion H.  
+        ++ auto.
+Qed.
+
+Lemma renameRule_progress_3_lemma:
+  forall left t0 t1  rule,
+    ~(In (left, [inr t0; inr t1]) (normalizeRule rule)).
+Proof.
+  intros left n0 t0 rule contr. destruct rule.
+  unfold normalizeRule in contr.
+  destruct destr_isSingle_lemma with (x := (n,s)); rewrite e in contr.
+  + inversion contr. inversion H. subst. simpl in e. congruence. inversion H.
+  + clear e. unfold renameRule in contr. destruct contr; simpl in H.
+    - inversion H. clear H H1. assert (H' := H2). apply map_length in H2.
+      destruct s. inversion H2. destruct s0. inversion H2. destruct s1.
+      * destruct s; destruct s0; simpl in H'; inversion H'. 
+      * inversion H2.
+    - induction s.
+      * inversion H.
+      * simpl in H. apply concat_in_lemma in H. destruct H.
+        ++ destruct a. simpl in H. inversion H. simpl in H. destruct H. inversion H. inversion H.  
+        ++ auto.
+Qed.
+
+(* minimized? *)
+Lemma renameRule_progress_lemma:
+  forall left n0 t0 t1 right rule,
+    right = [inr t0; inr t1] \/ right = [inr t0; inl n0] \/ right = [inl n0; inr t0] -> 
+    ~(In (left, right) (normalizeRule rule)).
+Proof.
+  intros left n0 t0 t1 right rule R contr. destruct rule.
+  unfold normalizeRule in contr.
+  destruct destr_isSingle_lemma with (x := (n,s)); rewrite e in contr.
+  + inversion contr. inversion H. subst.
+    destruct R; [| destruct H0]; subst; simpl in *; congruence.
+    inversion H.
+  + clear e. unfold renameRule in contr. destruct contr; simpl in H.
+    - inversion H. clear H H1. assert (H' := H2). apply map_length in H2.
+      destruct s; [|destruct s0; [|destruct s1]];
+      try (destruct R as [L|R]; [|destruct R as [L|R]]; subst; destruct s; destruct s0; simpl in H'; inversion H');
+      try (destruct R as [L|R]; [|destruct R as [L|R]]; subst; inversion H2).
+    - induction s.
+      * inversion H.
+      * simpl in H. apply concat_in_lemma in H. destruct H.
+        ++ destruct R as [L|R]; [|destruct R as [L|R]]; subst; 
+            destruct a; simpl in H; inversion H; simpl in H; destruct H; inversion H.
+        ++ auto.
+Qed.
+
+
+(*
+Lemma renameRule_progres:
+  forall left t rl rr rule,
+    ~(In (left, rl ++ [inr t] ++ rr) (renameRule rule)).
+Proof.
+  intros left t rl rr rule contr. destruct rule.
+  unfold renameRule in contr. destruct contr; simpl in H.
+    - (* inversion H. clear H H1. assert (H' := H2). apply map_length in H2. *)
+      induction rl.
+      + induction s.
+        * simpl in *. inversion H.
+        * destruct a. simpl in H. inversion H.
+     admit.
+      destruct s; [|destruct s0; [|destruct s1]];
+      try (destruct R as [L|R]; [|destruct R as [L|R]]; subst; destruct s; destruct s0; simpl in H'; inversion H');
+      try (destruct R as [L|R]; [|destruct R as [L|R]]; subst; inversion H2).
+    - induction s.
+      * inversion H.
+      * simpl in H. apply concat_in_lemma in H. destruct H.
+        ++ destruct R as [L|R]; [|destruct R as [L|R]]; subst; 
+            destruct a; simpl in H; inversion H; simpl in H; destruct H; inversion H.
+        ++ auto.
+Qed.
+*)
+
+(* ----------------------------------------------------------- *)
+
+
 
 Lemma lemma_9:
   forall left n0 t0 rules,
@@ -529,24 +585,31 @@ Proof.
   intros left n0 t0 rules contr. induction rules.
   - simpl in contr. assumption.
   - destruct a. simpl in contr. apply concat_in_lemma in contr. destruct contr.
-    + induction s.
-      * inversion H. inversion H0. inversion H0.
-      * destruct a.
-        -- simpl in H. destruct H. simpl in H. inversion H. admit.
-           apply h_integr_nt_nt in H. inversion H. simpl. auto.
-        -- unfold normalizeRule in H. simpl in H. it.  simpl in H.
+    + apply renameRule_progress_1_lemma in H. inversion H.
     + apply IHrules. assumption.
-Admitted.
+Qed.
 
 Lemma lemma_12:
   forall left t0 n0 rules,
     ~ In (left, [inr t0; inl n0]) (flat_map normalizeRule rules).
-Proof. Admitted.
+Proof. 
+  intros left n0 t0 rules contr. induction rules.
+  - simpl in contr. assumption.
+  - destruct a. simpl in contr. apply concat_in_lemma in contr. destruct contr.
+    + apply renameRule_progress_2_lemma in H. inversion H.
+    + apply IHrules. assumption.
+Qed.
 
 Lemma lemma_13:
   forall left t0 t1 rules,
     ~ In (left, [inr t0; inr t1]) (flat_map normalizeRule rules).
-Proof. Admitted.
+Proof.
+  intros left n0 t0 rules contr. induction rules.
+  - simpl in contr. assumption.
+  - destruct a. simpl in contr. apply concat_in_lemma in contr. destruct contr.
+    + apply renameRule_progress_3_lemma in H. inversion H.
+    + apply IHrules. assumption.
+Qed.
 
 Lemma Alg_prop_7:
 forall g left n0 t0,
@@ -583,7 +646,7 @@ unfold g_equiv. unfold produces. unfold generates. unfold short_rules. simpl. sp
 
     * inversion H3. eapply derives_step. apply IHderives.
 
-    apply -> Alg_prop_3. assumption.
+    apply -> Alg_prop_3. assumption. admit. admit. admit.
 
     * destruct t0.
     apply Alg_prop_4 in H'. destruct H'.
@@ -669,9 +732,10 @@ unfold g_equiv. unfold produces. unfold generates. unfold short_rules. simpl. sp
 
   destruct right. inversion H3. destruct right. inversion H3. destruct right.
   destruct s0; destruct s4.
-  * apply derives_step with (left := left). assumption. apply Alg_prop_3. assumption.
+  * apply derives_step with (left := left). assumption. apply Alg_prop_3. admit. admit. admit.  assumption.
   * apply Alg_prop_7 in H'. inversion H'.
   * apply Alg_prop_8 in H'. inversion H'.
+  
   * apply Alg_prop_9 in H'. inversion H'.
   * inversion H3.
   * inversion H3. destruct right. inversion H5.
