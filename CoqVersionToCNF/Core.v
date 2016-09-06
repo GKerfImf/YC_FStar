@@ -27,6 +27,7 @@ Inductive derives (g: cfg): sf -> sf -> Prop :=
                 In (left,right) (rules g) ->
                 derives g s1 (s2 ++ right ++ s3).
 
+
 Theorem derives_trans (g: cfg) (s1 s2 s3: sf):
 derives g s1 s2 ->
 derives g s2 s3 ->
@@ -40,6 +41,26 @@ induction H2.
     exact H1.
   + exact H.
 Qed.
+
+Theorem derives_left (g: cfg) (left: nt) (right: sf) (s1 s2 s3: sf):
+  derives g (s1 ++ right ++ s2) s3 ->
+  In (left,right) (rules g) ->
+  derives g (s1 ++ inl left :: s2) s3.
+Proof.
+  intros.
+  apply derives_trans with (s2 := s1 ++ right ++ s2).
+  - apply derives_step with (left := left).
+    + apply derives_refl.
+    + assumption.
+  - assumption.
+Qed.
+
+Theorem derives_left2 (g: cfg) (left: nt) (right: sf) (s1 s2 s3: sf):
+  derives g (s1 ++ inl left :: s2) s3 ->
+  In (left,right) (rules g) ->
+  (forall l' r', In (l',r') (rules g) -> left = l' -> r' = right) -> (* exists! *)
+  derives g (s1 ++ right ++ s2) s3.
+Proof. Admitted.
 
 
 Definition generates (g: cfg) (s: list (nt + t)): Prop:=

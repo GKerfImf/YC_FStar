@@ -48,15 +48,42 @@ Lemma lemma_1:
 Proof.
   Admitted.
 
+Lemma lemma_2:
+  forall g g' s,
+    derives g [inl (start_symbol g)] (map terminal_lift s) ->
+    (forall rule, In rule (rules g) -> In rule (rules g')) ->
+    derives g' [inl (start_symbol g)] (map terminal_lift s).
+Proof. Admitted.
+
+Lemma lemma_3:
+  forall g s,
+    derives g [inl (start_symbol g)] (map terminal_lift s) ->
+    derives (new_s_s g) [inl (start_symbol g)] (map terminal_lift s).
+Proof.
+  intros.
+  apply lemma_2.
+  - assumption.
+  - intros.
+    simpl. right. assumption. Qed.
+
 Theorem equivalence:
   forall g,
       g_equiv g (new_s_s g).
 Proof.
   unfold g_equiv. unfold produces. unfold generates. simpl. split.
-  - admit.
-    (* TODO: derives_left *)
-    (* TODO: g1 in g2 -> derives g1 a b -> derives g2 a b *) 
   - intros.
+    apply derives_left with (g := new_s_s g) (s1 := []) (right := [inl (start_symbol g)]).
+    + simpl. apply lemma_3. assumption.
+    + simpl. left. reflexivity.
+  - intros.
+(*     simpl in H.
+    apply derives_left with (g := new_s_s g) (s1 := []) (right := [inl (start_symbol g)]) in H. with
+      (g := new_s_s g)
+      (s1 := [inl (new_name (start_symbol g))])
+      (s2 := []) 
+      (s3 := [])
+      (left := (new_name (start_symbol g)))
+      (right := [inl (start_symbol g)])  in H. *)
     induction H.
     + (* TODO: ??? *) admit.
     + simpl in H0. destruct H0. inversion H0. subst.
