@@ -85,17 +85,26 @@ Proof.
     + assumption.
 Qed.
 
-Lemma lemma_1:
+(* Lemma lemma_1:
   forall g left right, In (left, right) (rules g) -> In (left, right) (rules (new_s_s g)).
 Proof.
   Admitted.
-
+ *)
 Lemma lemma_2:
   forall g g' s,
     derives g [inl (start_symbol g)] (map terminal_lift s) ->
     (forall rule, In rule (rules g) -> In rule (rules g')) ->
     derives g' [inl (start_symbol g)] (map terminal_lift s).
-Proof. Admitted.
+Proof.
+  intros.
+  induction H.
+  - apply derives_refl.
+  - apply derives_trans with (s2 := s2 ++ inl left :: s3).
+    + apply IHderives.
+    + apply derives_step with (left := left).
+      * apply derives_refl.
+      * apply H0. apply H1.
+Qed.
 
 Lemma lemma_3:
   forall g s,
@@ -108,16 +117,77 @@ Proof.
   - intros.
     simpl. right. assumption. Qed.
 
-(* Lemma lemma_4:
-g : cfg
-s : list t
-H : derives (new_s_s g)
-      [inl (new_name (start_symbol g))]
-      (map terminal_lift s)
-______________________________________(1/1)
-derives g [inl (start_symbol g)]
-  (map terminal_lift s)
- *)
+Theorem derives_rule:
+  forall g left right s1 s2,
+    In (left,right) (rules g) ->
+    derives g (s1 ++ [inl left] ++ s2) (s1 ++ right ++ s2).
+Proof.
+  intros g left right s1 s2 H.
+  apply derives_step with (left:=left).
+  - apply derives_refl.
+  - exact H.
+Qed.
+
+Theorem derives_start:
+  forall g left right,
+    In (left,right) (rules g) -> derives g [inl left] right.
+Proof.
+  intros g left right H.
+  apply derives_rule with (s1:=[]) (s2:=[]) in H.
+  simpl in H.
+  rewrite app_nil_r in H.
+  exact H.
+Qed.
+    
+Lemma lemma_8:
+  forall g s (l:nt) r,
+    derives g [inl l] s ->
+    In (l,r) (rules g) ->
+    (forall l' r', In (l',r') (rules g) -> l = l' -> r = r') ->
+    s = r.
+Proof.
+  intros. apply derives_start in H0.
+  destruct s. admit. inversion H.
+  apply H1 in H0.
+  apply derives_step with (s2 := []) (right := []) (s3 := []) in H.
+Admitted.
+
+Lemma lemma_7:
+  forall g s (l:nt) r,
+    derives g [inl l] s ->
+    In (l,r) (rules g) ->
+    (forall l' r', In (l',r') (rules g) -> l = l' -> r = r') ->
+    derives g r s.
+Proof.
+  intros.
+  apply lemma_8 with (r := r) in H. 
+  - subst. apply derives_refl.
+  - assumption.
+  - assumption.
+Qed.
+
+Lemma lemma_4:
+  forall (g: cfg) s,
+    well_named_left_local g ->
+    derives (new_s_s g) [inl (new_name (start_symbol g))] s ->
+    derives (new_s_s g) [inl (start_symbol g)] s.
+Proof.
+  intros.
+  apply lemma_7 with (r := [inl (start_symbol g)]) in H0.
+  + simpl. assumption.
+  + simpl. left. reflexivity.
+  + intros. subst. destruct H1. inversion H1. subst. reflexivity.
+    unfold well_named_left_local in H. apply H in H1. unfold not in H1. exfalso. apply H1. reflexivity.
+Qed.
+
+Lemma lemma_6:
+  forall g s1 s2 s3,
+  ~ (derives (new_s_s g) s1
+      (s2 ++ inl (new_name (start_symbol g)) :: s3)).
+Proof.
+  intros g s1 s2 s3 c.
+Admitted.
+
 Theorem equivalence:
   forall g,
       g_equiv g (new_s_s g).
@@ -128,18 +198,13 @@ Proof.
     + simpl. apply lemma_3. assumption.
     + simpl. left. reflexivity.
   - intros.
-(*     simpl in H.
-    apply derives_left with (g := new_s_s g) (s1 := []) (right := [inl (start_symbol g)]) in H. with
-      (g := new_s_s g)
-      (s1 := [inl (new_name (start_symbol g))])
-      (s2 := []) 
-      (s3 := [])
-      (left := (new_name (start_symbol g)))
-      (right := [inl (start_symbol g)])  in H. *)
-    destruct H.
-    + (* TODO: ??? *) admit.
-    + simpl in H0. destruct H0. inversion H0. subst.
-      (* H : derives (new_s_s g) s1 (s2 ++ inl (new_name (start_symbol g)) :: s3) ~ False *) admit.
-      apply derives_step with (left := left). assumption. assumption.
-Admitted.
+    apply lemma_4 in H.
+    induction H.
+    apply derives_refl.
+    apply derives_trans with (s2 := (s2 ++ inl left :: s3)).
+    + assumption.
+    + clear IHderives. simpl in H0. destruct H0.
+      * inversion H0. subst. clear H0. apply lemma_6 in H. inversion H.
+      * apply derives_step with (left := left). apply derives_refl. assumption.
+Qed.
 
