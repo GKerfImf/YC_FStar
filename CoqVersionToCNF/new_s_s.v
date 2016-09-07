@@ -14,10 +14,9 @@ Definition g1 := {|
     (NT "S", [inr (T "O")])
   ];
 |}.
-
 Definition new_name (ss: nt) :=
   match ss with
-  | NT s => NT (s ++ "0")
+  | NT s => NT (s ++ "'")
   end.
 
 Definition new_s_s (g: cfg) := {|
@@ -27,21 +26,64 @@ Definition new_s_s (g: cfg) := {|
 
 Compute (new_s_s g1).
 
+Definition well_named_left_local (g: cfg) :=
+  forall (left: nt) (right: sf),
+    In (left,right) (rules g) ->
+    left <> new_name (start_symbol g).
+
+Definition well_named_right_local (g: cfg) :=
+  forall (left: nt) (right: sf),
+    In (left,right) (rules g) ->
+    (forall nt, In nt right -> nt <> inl (new_name (start_symbol g))).
+
+(* Definition well_named_local (g: cfg) :=
+  well_named_left_local g /\ well_named_right_local g. *)
+
 Theorem progress:
-  forall (g:cfg) (rule: nt * sf),
-  (* TODO: some name-restr. *)
-  In rule (rules (new_s_s g)) -> ~ (In (inl (start_symbol (new_s_s g))) (snd rule)).
+  forall (g:cfg) (left: nt) (right: sf),
+    well_named_left_local g ->
+    In (left,right) (rules (new_s_s g)) ->
+    left = (start_symbol (new_s_s g)) ->
+    right = [inl (start_symbol g)].
 Proof.
-  intros g rule H contra.
+  intros g l r WN H0 H1.
+  unfold well_named_left_local in WN.
+  simpl in H0.
+  destruct H0.
+  - inversion_clear H. reflexivity.
+  - apply WN in H. subst. destruct H. simpl. reflexivity.
+Qed.
+
+Lemma lemma_5:
+  forall nt,
+    nt <> new_name nt.
+Proof.
+  intros nt contra.
+  destruct nt. unfold new_name in contra.
+  inversion contra.
+  clear contra. induction s.
+  - inversion H0.
+  - inversion H0. auto.
+Qed.
+
+Theorem progress':
+  forall (g:cfg) (rule: nt * sf),
+    well_named_right_local g ->
+    In rule (rules (new_s_s g)) ->
+    ~ (In (inl (start_symbol (new_s_s g))) (snd rule)).
+Proof.
+  intros g rule WN2 H contra.
+  unfold well_named_right_local in WN2.
+  destruct rule.
   simpl in *.
   destruct H.
-  - subst. simpl in *. destruct contra.
-    + destruct g. simpl in H. inversion H. admit.
-    + inversion H.
-  - admit.
-Admitted.
-
-
+  - inversion H. subst. destruct contra.
+    + inversion H0. apply lemma_5 in H2. assumption.
+    + inversion H0.
+  - apply WN2 with (nt0 := inl (new_name (start_symbol g)))in H.
+    + unfold not in H. apply H. reflexivity.
+    + assumption.
+Qed.
 
 Lemma lemma_1:
   forall g left right, In (left, right) (rules g) -> In (left, right) (rules (new_s_s g)).
@@ -66,6 +108,16 @@ Proof.
   - intros.
     simpl. right. assumption. Qed.
 
+(* Lemma lemma_4:
+g : cfg
+s : list t
+H : derives (new_s_s g)
+      [inl (new_name (start_symbol g))]
+      (map terminal_lift s)
+______________________________________(1/1)
+derives g [inl (start_symbol g)]
+  (map terminal_lift s)
+ *)
 Theorem equivalence:
   forall g,
       g_equiv g (new_s_s g).
@@ -84,7 +136,7 @@ Proof.
       (s3 := [])
       (left := (new_name (start_symbol g)))
       (right := [inl (start_symbol g)])  in H. *)
-    induction H.
+    destruct H.
     + (* TODO: ??? *) admit.
     + simpl in H0. destruct H0. inversion H0. subst.
       (* H : derives (new_s_s g) s1 (s2 ++ inl (new_name (start_symbol g)) :: s3) ~ False *) admit.

@@ -55,13 +55,16 @@ Proof.
   - assumption.
 Qed.
 
-Theorem derives_left2 (g: cfg) (left: nt) (right: sf) (s1 s2 s3: sf):
+(* Theorem derives_left2 (g: cfg) (left: nt) (right: sf) (s1 s2 s3: sf):
   derives g (s1 ++ inl left :: s2) s3 ->
   In (left,right) (rules g) ->
   (forall l' r', In (l',r') (rules g) -> left = l' -> r' = right) -> (* exists! *)
   derives g (s1 ++ right ++ s2) s3.
-Proof. Admitted.
-
+Proof.
+  intros.
+  apply derives_trans with (s1 := s1 ++ inl left :: s2) in H.
+  apply derives_left with (s1 := s1) (right := inl left) in H.
+Admitted. *)
 
 Definition generates (g: cfg) (s: list (nt + t)): Prop:=
   derives g [inl (start_symbol g)] s.

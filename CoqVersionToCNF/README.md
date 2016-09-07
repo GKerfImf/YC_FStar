@@ -1,8 +1,11 @@
-## YC + Coq 
+﻿## YC + Coq + F*
 - [ ] START: Eliminate the start symbol from right-hand sides
-  - [ ] Progress
+  - [x] Progress
   - [ ] Equivalence
+  - [ ] Rewrite from Coq to F*
 - [ ] BIN: Eliminate right-hand sides with more than 2 nonterminals
 - [ ] DEL: Eliminate ε-rules
 - [ ] UNIT: Eliminate unit rules
 - [ ] TERM: Eliminate rules with nonsolitary terminals
+  - [ ] Progress
+  - [x] Equivalence
