@@ -92,9 +92,9 @@ Proof.
  *)
 Lemma lemma_2:
   forall g g' s,
-    derives g [inl (start_symbol g)] (map terminal_lift s) ->
+    derives g [inl (start_symbol g)] s ->
     (forall rule, In rule (rules g) -> In rule (rules g')) ->
-    derives g' [inl (start_symbol g)] (map terminal_lift s).
+    derives g' [inl (start_symbol g)] s.
 Proof.
   intros.
   induction H.
@@ -108,8 +108,8 @@ Qed.
 
 Lemma lemma_3:
   forall g s,
-    derives g [inl (start_symbol g)] (map terminal_lift s) ->
-    derives (new_s_s g) [inl (start_symbol g)] (map terminal_lift s).
+    derives g [inl (start_symbol g)] s ->
+    derives (new_s_s g) [inl (start_symbol g)] s.
 Proof.
   intros.
   apply lemma_2.
@@ -148,8 +148,6 @@ Lemma lemma_8:
 Proof.
   intros. apply derives_start in H0.
   destruct s. admit. inversion H.
-  apply H1 in H0.
-  apply derives_step with (s2 := []) (right := []) (s3 := []) in H.
 Admitted.
 
 Lemma lemma_7:
@@ -188,23 +186,42 @@ Proof.
   intros g s1 s2 s3 c.
 Admitted.
 
+Lemma lemma_11:
+  forall g s,
+    derives (new_s_s g) [inl (start_symbol g)] s -> derives g [inl (start_symbol g)] s.
+Proof.
+  intros.
+  induction H.
+Admitted.
+
+Lemma lemma_9:
+  forall g s,
+    derives g [inl (start_symbol g)] s ->
+    derives (new_s_s g) [inl (new_name (start_symbol g))] s.
+Proof.
+  intros.
+  apply derives_left with (g := new_s_s g) (s1 := []) (right := [inl (start_symbol g)]).
+  + simpl. apply lemma_3. assumption.
+  + simpl. left. reflexivity.
+Qed.
+
+Lemma lemma_10:
+  forall g s,
+    derives (new_s_s g) [inl (new_name (start_symbol g))] s ->
+    derives g [inl (start_symbol g)] s.
+Proof.
+  intros.
+  apply lemma_4 in H.
+  apply lemma_11 in H.
+  exact H.
+Admitted.
+
 Theorem equivalence:
   forall g,
       g_equiv g (new_s_s g).
 Proof.
   unfold g_equiv. unfold produces. unfold generates. simpl. split.
-  - intros.
-    apply derives_left with (g := new_s_s g) (s1 := []) (right := [inl (start_symbol g)]).
-    + simpl. apply lemma_3. assumption.
-    + simpl. left. reflexivity.
-  - intros.
-    apply lemma_4 in H.
-    induction H.
-    apply derives_refl.
-    apply derives_trans with (s2 := (s2 ++ inl left :: s3)).
-    + assumption.
-    + clear IHderives. simpl in H0. destruct H0.
-      * inversion H0. subst. clear H0. apply lemma_6 in H. inversion H.
-      * apply derives_step with (left := left). apply derives_refl. assumption.
+  - apply lemma_9.
+  - apply lemma_10.
 Qed.
 
