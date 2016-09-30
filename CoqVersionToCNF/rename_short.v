@@ -4,56 +4,7 @@ Require Import Coq.Arith.EqNat.
 Require Import List.
 Import ListNotations.
 Open Scope list_scope.
-
-
-Inductive nt: Type :=
-  NT : string -> nt.
-
-Inductive t: Type :=
-  T : string -> t.
-
-Definition sf: Type := list (sum nt t).
-Definition rule: Type := (nt * sf).
-
-Record cfg: Type:= {
-  start_symbol: nt;
-  rules: (list rule);
-}.
-
-Definition terminal_lift (s: t): nt + t := inr s.
-
-Inductive derives (g: cfg): sf -> sf -> Prop :=
-| derives_refl: forall (s: sf),
-                derives g s s
-| derives_step: forall (s1 s2 s3: sf) (left: nt) (right: sf),
-                derives g s1 (s2 ++ inl left :: s3) ->
-                In (left,right) (rules g) ->
-                derives g s1 (s2 ++ right ++ s3).
-
-Theorem derives_trans (g: cfg) (s1 s2 s3: sf):
-derives g s1 s2 ->
-derives g s2 s3 ->
-derives g s1 s3.
-Proof.
-intros H1 H2.
-induction H2. 
-- exact H1.
-- apply derives_step with (left:=left).
-  + apply IHderives.
-    exact H1.
-  + exact H.
-Qed.
-
-
-Definition generates (g: cfg) (s: list (nt + t)): Prop:=
-  derives g [inl (start_symbol g)] s.
-
-Definition produces (g: cfg) (s: list t): Prop:=
-  generates g (map terminal_lift s).
-
-
-Definition g_equiv (g1: cfg) (g2: cfg): Prop:=
-  forall s: list t, produces g1 s <-> produces g2 s.
+Require Import Core.
 
 Definition isSingle (rule: nt * sf) :=
   match rule with
@@ -228,7 +179,7 @@ Lemma h_integr_eps:
   forall left rule,
     In (left, []) (renameRule rule) -> rule = (left,[]).
 Proof.
-  intros. destruct rule0. destruct s.
+  intros. destruct rule. destruct s.
   - simpl in H. destruct H. assumption. inversion H.
   - simpl in H. destruct H.
     + inversion H.
@@ -248,7 +199,7 @@ Proof.
   intros.
   unfold normalizeRule in H. destruct isSingle in H.
   - inversion H. auto. inversion H0.
-  - destruct rule0. apply h_integr_eps in H. inversion H. reflexivity. 
+  - destruct rule. apply h_integr_eps in H. inversion H. reflexivity. 
 Qed.
 
 
@@ -267,7 +218,7 @@ Lemma h_integr_nt_sinle:
   forall left nt0 rule,
     In (left,[inl nt0]) (renameRule rule) -> isSingle rule = false -> (left,[inl nt0]) = rule.
 Proof.
-  intros. destruct rule0. destruct H.
+  intros. destruct rule. destruct H.
   - inversion H. subst.
       destruct s. inversion H3.
       destruct s0. destruct s. simpl. reflexivity. inversion H3. inversion H0. inversion H3. 
@@ -294,7 +245,7 @@ Proof.
   - simpl in contra. apply concat_in_lemma in contra. destruct contra.
     + destruct a.
       * inversion H.
-      * inversion H. inversion H0. destruct t1. simpl in H2. unfold not in KN. symmetry in H2.
+      * inversion H. inversion H0. destruct t. simpl in H2. unfold not in KN. symmetry in H2.
         apply KN in H2. inversion H2. simpl in KN. inversion H0.
     + apply IHelems in H. inversion H.
 Qed.
@@ -341,7 +292,7 @@ Lemma h_integr_nt_nt:
     length (snd rule) >= 2 -> ~ In rule (flat_map renameElem2 elems).
 Proof.
   unfold not. intros.
-  destruct rule0. simpl in H.
+  destruct rule. simpl in H.
   induction elems.
   - inversion H0.
   - simpl in H0. apply concat_in_lemma in H0. destruct H0.
@@ -370,9 +321,9 @@ Proof.
       destruct s1. inversion H2.
         destruct s; destruct s0.
         * simpl. reflexivity.
-        * simpl in H4. inversion H4. symmetry in H5. destruct t0. simpl in H5. apply N1 in H5. inversion H5.
-        * simpl in H3. inversion H3. symmetry in H5. destruct t0. simpl in H5. apply N0 in H5. inversion H5.
-        * simpl in H3. inversion H3. symmetry in H5. destruct t0. simpl in H5. apply N0 in H5. inversion H5.
+        * simpl in H4. inversion H4. symmetry in H5. destruct t. simpl in H5. apply N1 in H5. inversion H5.
+        * simpl in H3. inversion H3. symmetry in H5. destruct t. simpl in H5. apply N0 in H5. inversion H5.
+        * simpl in H3. inversion H3. symmetry in H5. destruct t. simpl in H5. apply N0 in H5. inversion H5.
         * inversion H2.
     + apply h_integr_nt_nt in H. inversion H. simpl. auto. Qed.
 
