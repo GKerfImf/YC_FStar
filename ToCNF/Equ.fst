@@ -1,15 +1,80 @@
 module Equ
-	open FStar.IO
 	open IL
 	open Yard.Core.Conversions
 	open Yard.Core.Conversions.Helpers
-
-	let magic = false 
-
-	type sentence (patt:eqtype) (expr:eqtype) = terms: list (production patt expr){forall prod. List.Tot.mem prod terms ==> Helpers.isPToken prod}
-	type sententialForm (patt:Type) (expr:Type) = list (production patt expr)
+    open FStar.Constructive 
 
 
+    type nonterm = prod: (production source source) { Helpers.isPRef prod }
+    type term = prod: (production source source) { Helpers.isPToken prod }
+    type symbol = cor nonterm term 
+    type sf = list symbol 
+    type sentence = list term 
+
+    type cfg = { 
+        start_symbol: nonterm; 
+        rules: list (rule source source)
+    } 
+
+    let terminal_lift (t: term): symbol = IntroR t
+ 
+    assume val derives: g:cfg -> old_sf:sf -> new_sf:sf -> Type 
+
+
+    let lb = PToken (new_Source0 "(")
+    let ep = PToken (new_Source0 ".")
+    let rb = PToken (new_Source0 ")")
+    let nS: production source source = PRef (new_Source0 "S", None)
+
+
+    val left: rule source source -> Tot nonterm
+    let left rule = PRef (new_Source0 "S", None)
+
+    val right: rule source source -> Tot nonterm
+    let right rule = 
+
+
+    let nS: production source source = PRef (new_Source0 "S", None)
+
+
+    val splitR: sf -> sf -> Tot (sf * sf)
+    let splitR sub_lst lst =
+        match sub_lst, lst with
+        | [IntroR lb; IntroL nS; IntroR rb],    [IntroR lb; IntroR rb; IntroL nS; IntroR rb; IntroR rb]     -> [IntroR lb], [IntroR rb]
+        | [IntroL nS; IntroL nS],               [IntroR rb; IntroL nS; IntroL nS; IntroR rb]                -> [IntroR lb], [IntroR rb] 
+        | [],                                   [IntroR lb; IntroR rb]                                      -> [IntroR lb], [IntroR rb] 
+        | [IntroR lb; IntroL nS; IntroR rb],    [IntroR lb; IntroL nS; IntroR rb; IntroL nS]                -> [],          [IntroL nS]
+        | [IntroL nS; IntroL nS],               [IntroL nS; IntroL nS; IntroL nS]                           -> [],          [IntroL nS]
+        | [IntroR lb; IntroL nS; IntroR rb],    [IntroL nS; IntroR lb; IntroL nS; IntroR rb]                -> [IntroL nS], []
+        | _,_ -> [],[]
+
+
+    assume DerivesEval: 
+        forall (g: cfg) (old_sf: sf) (new_sf: sf). 
+            derives g old_sf new_sf <==> 
+                old_sf = new_sf 
+                \/ (exists (left: nonterm) (right: sf).
+                        List.Tot.mem (left, right) g.rules 
+                        /\ (let (sf1,sf2) = splitR [] new_sf in //let (sf1,sf2) = splitR right new_sf in 
+                                True
+                                /\ sf1 @ right @ sf2 = new_sf 
+                                /\ derives g old_sf (sf1 @ [IntroL left] @ sf2)
+                            )
+                    ) 
+(*
+    let g1: cfg = {
+        start_symbol = NT "S"; 
+        rules = [
+            (NT "S", [IntroR (T "("); IntroL (NT "S"); IntroR (T ")")]);
+            (NT "S", [IntroL (NT "S"); IntroL (NT "S")]);
+            (NT "S", [IntroR (T "O")])
+        ]
+    } 
+*)
+	//type sentence (patt:eqtype) (expr:eqtype) = terms: list (production patt expr){forall prod. List.Tot.mem prod terms ==> Helpers.isPToken prod}
+	//type sententialForm (patt:Type) (expr:Type) = list (production patt expr)
+
+(*
 //TODO: move to Helpers 
     val create: 
          production 'a 'b -> Tot (elem 'a 'b)
@@ -25,19 +90,6 @@ module Equ
 	    Helpers.simpleNotStartRule "S" (List.Tot.map create [PRef (new_Source0 "S", None); PRef (new_Source0 "S", None)]);
 	    Helpers.simpleNotStartRule "S" (List.Tot.map create [])]
 
-	val kek_cbs: list (rule source source)
-	let kek_cbs = [Helpers.simpleStartRule "S" (List.Tot.map create [PToken (new_Source0 "1"); PToken (new_Source0 "2"); PToken (new_Source0 "3"); PToken (new_Source0 "4"); PToken (new_Source0 "5")]);
-	    Helpers.simpleNotStartRule "S" (List.Tot.map create [PToken (new_Source0 "1"); PToken (new_Source0 "2"); PToken (new_Source0 "3"); PToken (new_Source0 "4")]);
-	    Helpers.simpleNotStartRule "S" (List.Tot.map create [PToken (new_Source0 "2"); PToken (new_Source0 "3"); PToken (new_Source0 "4"); PToken (new_Source0 "5")]);
-	    Helpers.simpleNotStartRule "S" (List.Tot.map create [])]
-
-
-    val start_symbol_slr_cbs: production source source
-    let start_symbol_slr_cbs = PRef (new_Source0 "S", None)
-
-	val slr_cbs: list (rule source source) 
-	let slr_cbs = SplitLongRule.splitLongRule ori_cbs
-
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -51,8 +103,8 @@ module Equ
 	val nth: #a:eqtype -> l: list a -> (ind: nat {ind < List.Tot.length l}) -> Tot a
 	let rec nth #a l n = match l with
 		| hd::tl -> if n = 0 then hd else nth tl (n - 1)
-
-
+*)
+(*
 	type derives (#a:eqtype) (#b:eqtype) (g: list (rule a b)) (old_sf: sententialForm a b) (new_sf: sententialForm a b) =
 		| DerivesRefl: 
 			   sf1: sententialForm a b { sf1 = old_sf /\ sf1 = new_sf }
@@ -63,9 +115,23 @@ module Equ
 			-> r: (rule_in g) {sf1 @ (rigth r) @ sf2 = new_sf }
 			-> derives g old_sf (sf1 @ [left r] @ sf2)
 			-> derives g old_sf new_sf
+*)
 
+(*
+    assume DerivesEq: 
+        forall (g: cfg) (old_sf: sf) (new_sf: sf). 
+            derives g old_sf new_sf <==> old_sf = new_sf 
 
+    assume DerivesStep: 
+        forall (g: cfg) (s1: sf) (s2:sf) (s3: sf) (left: nonterm) (right: sf).
+            List.Tot.mem (left, right) g.rules /\ derives g s1 (s2 @ [IntroL left] @ s3 ) ==> derives g s1 (s2 @ right @ s3)
+        
+     
+    let test_0 = assert (derives g1 sf_0 sf_0) //Ok
 
+    let test_1 = assert (derives g1 sf_0 sf_1) //Ok
+*)
+(*
 	//val d1: sententialForm source source
 	//let d1 = [PRef (new_Source0 "S", None)]
 
@@ -139,7 +205,7 @@ module Equ
 		der7
 
 
-
+(*
 	val eq_f: sf:sententialForm source source -> derives ori_cbs [start_symbol_ori_cbs] sf -> derives slr_cbs [start_symbol_slr_cbs] sf
 	let rec eq_f sf der = 
 		match der with
@@ -208,7 +274,7 @@ module Equ
                 in
 
 			newder
-
+*)
 (*
 	val eq_f: sf:sententialForm source source -> derives ori_cbs [start_symbol_ori_cbs] sf -> derives slr_cbs [start_symbol_slr_cbs] sf
 	let rec eq_f sf der = 
@@ -306,26 +372,4 @@ module Equ
 	val s_d7: produces ori_cbs 
 	let s_d7 = d7
 
-
-	//TODO: del
-	let rec concat l = match l with | [] -> "" | x::xs -> x ^ " " ^ concat xs 
-
-	val printer: a:sententialForm source source -> b:sententialForm source source -> cbs: list (rule source source) -> derives cbs a b -> string
-	let rec printer a b cbs der = 
-		(b |> List.Tot.collect (fun el -> match el with | PRef(s,_) | PToken(s) -> [s.text] | _ -> [])  |> concat) ^ 
-		
-		(match der with 
-		| DerivesRefl sf -> ""
-		| DerivesStep sf1 sf2 rule sder -> "\n" ^ printer a (sf1 @ [left rule] @ sf2) cbs sder)
-
-
-
-	let main = 
-
-		//"> " ^ (Printer.printListRule kek_cbs) ^ "\n\n" ^ (Printer.printListRule (SplitLongRule.splitLongRule kek_cbs)) ^ "\n\n" ^ 
-
-
-		"> " ^ (printer [start_symbol_ori_cbs] d7 ori_cbs d_d1_d7) ^ "\n\n" ^ 
-
-		"> " ^ (printer [start_symbol_slr_cbs] d7 slr_cbs (eq_f d7 d_d1_d7))
-
+*)

@@ -19,7 +19,6 @@ type cfg = {
     rules: list (nonterm * sf) 
 } 
 
-
 let terminal_lift (t: term): symbol = IntroR t
 
 assume val derives: g:cfg -> old_sf:sf -> new_sf:sf -> Type 
@@ -277,7 +276,7 @@ let rev_tr_eq_mini_Lemma g1 =
     ()
 
 
-let isSingle (rule: (nonterm * sf)) =
+let isSingle (rule: nonterm * sf) =
     match rule with
     | _, [IntroR _] -> true
     | _ -> false
@@ -327,38 +326,30 @@ Lemma derives_trans (g: cfg) (s1 s2 s3: sf):
 *)
 
 
-val alg_prop_1: g:cfg -> left:nonterm -> r_single:symbol ->
+
+val example_1: left:nonterm -> nt0:nonterm ->
     Lemma 
-        (requires (List.Tot.mem (left, [r_single]) g.rules )) 
-        (ensures (List.Tot.mem (left, [r_single]) (renameTerms g).rules ))
+        (requires (True)) 
+        (ensures (renameRule (left,[IntroL nt0]) = [(left,[IntroL nt0])]))
+let example_1 left nt0 = ()
 
-let alg_prop_1 g left r_single = 
-	
-	assume ( 
+(* val example_1': u:unit->
+    Lemma 
+        (requires (True)) 
+        (ensures (forall left nt0. renameRule (left,[IntroL nt0]) = [(left,[IntroL nt0])]))
+let example_1' () = () *)
 
-List.Tot.mem (left, [r_single]) 
+val example_2: left:nonterm ->
+    Lemma 
+        (requires (True)) 
+        (ensures (renameRule (left,[]) = [(left,[])]))
+let example_2 left = ()
 
-({
-  start_symbol = g.start_symbol;
-  rules = List.Tot.concatMap  normalizeRule g.rules
-}).rules
-
-);
-
-
-	assert ( List.Tot.mem (left, [r_single]) (renameTerms g).rules );
-	()
-
-
-
-
-
-
-
-
-
-
-
+val example_3: rule: (nonterm * sf) ->
+    Lemma 
+        (requires (isSingle rule)) 
+        (ensures (normalizeRule rule = [rule]))
+let example_3 rule = ()
 
 
 

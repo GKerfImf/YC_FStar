@@ -1,6 +1,7 @@
 #VERFILES=\
 	IL.fst\
     Yard.Core.Conversions.Helpers.fst\
+    Yard.Core.Conversions.DeleteStartSymbol.fst\
     Yard.Core.Conversions.SplitLongRule.fst\
     Yard.Core.Conversions.DeleteEpsRule.fst\
     Yard.Core.Conversions.DeleteChainRule.fst\
@@ -13,25 +14,28 @@
 
 
 VERFILES=\
-	EquANewHope.fst
-	
-LIB_FILES = FStar.List.Tot.fst FStar.Constructive.fst
+	IL.fst\
+    Yard.Core.Conversions.Helpers.fst\
+    Yard.Core.Conversions.DeleteStartSymbol.fst\
+    Printer.fst\
+    Main.fst
  
-#LIB_FILES = FStar.Ghost.fst FStar.FunctionalExtensionality.fst FStar.PredicateExtensionality.fst\
+LIB_FILES = FStar.Ghost.fst FStar.FunctionalExtensionality.fst FStar.PropositionalExtensionality.fst FStar.PredicateExtensionality.fst\
     FStar.TSet.fst FStar.Set.fst FStar.Heap.fst FStar.ST.fst FStar.All.fst FStar.Float.fsti FStar.IO.fsti\
     FStar.List.Tot.fst FStar.ListProperties.fst FStar.Constructive.fst
 	
 
 
 FSTAR_HOME = ~/FStar
+include $(FSTAR_HOME)/ulib/ml/Makefile.include
 LIB = $(FSTAR_HOME)/lib
 BIN = $(FSTAR_HOME)/bin
 FSTAR = $(BIN)/fstar.exe
 
 
 
-all: ver2
-#all: extrToCNFOCaml 
+#all: ver2
+all: extrToCNFOCaml 
 
 
 ver: $(VERFILES)
@@ -44,14 +48,15 @@ ver1: $(VERFILES)
 ver2: $(VERFILES)
 	$(FSTAR) --print_fuels --z3timeout 10 --initial_fuel 8 --initial_ifuel 8 --max_fuel 64 --max_ifuel 16 --explicit_deps $(LIB_FILES) $^
 
-ver3: $(VERFILES)
-	$(FSTAR) --z3timeout 10000 --explicit_deps --print_fuels --initial_fuel 1 --initial_ifuel 1 --max_fuel 18 --max_ifuel 18 --print_implicits $(LIB_FILES) $^
-
 
 extrToCNFOCaml: $(VERFILES)
-	$(FSTAR) --explicit_deps --use_native_int --odir out --codegen OCaml $(LIB_FILES) $^
-	cp $(LIB)/ml/MkPrims.ml $(LIB)/ml/native_int/prims.ml $(LIB)/ml/FStar_IO.ml $(LIB)/ml/FStar_All.ml out
-	(cd out; ocamlc -o ToCNF.exe nums.cma MkPrims.ml prims.ml FStar_IO.ml FStar_All.ml FStar_List_Tot.ml IL.ml Yard_Core_Conversions_Helpers.ml Yard_Core_Conversions_DeleteEpsRule.ml Printer.ml Main.ml)
+	$(MAKE) -C $(ULIB_ML)
+	#$(FSTAR) --explicit_deps --odir out --codegen OCaml $(LIB_FILES) $^
+	$(FSTAR) $(FSTAR_DEFAULT_ARGS) --odir out --codegen OCaml $^
+	#cp $(LIB)/ml/MkPrims.ml $(LIB)/ml/prims.ml $(LIB)/ml/FStar_IO.ml $(LIB)/ml/FStar_All.ml out
+	#(cd out; ocamlc -o ToCNF.exe nums.cma MkPrims.ml prims.ml FStar_IO.ml FStar_All.ml FStar_List_Tot.ml IL.ml Yard_Core_Conversions_Helpers.ml Yard_Core_Conversions_DeleteEpsRule.ml Printer.ml Main.ml)
+	#(cd out; ocamlc -o ToCNF.exe nums.cma MkPrims.ml Big_int_Z.ml prims.ml IL.ml Yard_Core_Conversions_Helpers.ml)
+	(cd out; $(OCAMLOPT) FStar_List_Tot.ml IL.ml Yard_Core_Conversions_Helpers.ml Printer.ml Yard_Core_Conversions_DeleteStartSymbol.ml Main.ml -o ToCNF.exe)
 	./out/ToCNF.exe
 
 
