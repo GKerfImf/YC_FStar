@@ -30,7 +30,11 @@ module Yard.Core.Conversions.Helpers
     val isPTokenRule: #a:Type -> #b:Type
         -> rule0: (rule a b) {isPSeq rule0.body} -> Tot bool
     let isPTokenRule #a #b rule0 = match rule0.body with 
-        | PSeq(elements,_,_) -> List.Tot.length elements = 1 && isPToken (List.Tot.hd elements).rule
+        | PSeq(elements,_,_) -> 
+            List.Tot.length elements = 1 
+            && (let hd_el: (elem a b) = List.Tot.hd elements in
+                let hd_rule:(production a b) = hd_el.rule in 
+                isPToken hd_rule)
 
 
     val getLeftPart: #a:Type -> #b:Type

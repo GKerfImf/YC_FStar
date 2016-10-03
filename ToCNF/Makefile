@@ -28,55 +28,50 @@ LIB_FILES = FStar.Ghost.fst FStar.FunctionalExtensionality.fst FStar.Proposition
 
 FSTAR_HOME = ~/FStar
 include $(FSTAR_HOME)/ulib/ml/Makefile.include
-LIB = $(FSTAR_HOME)/lib
+LIB = $(FSTAR_HOME)/ulib
 BIN = $(FSTAR_HOME)/bin
 FSTAR = $(BIN)/fstar.exe
 
 
 
 #all: ver2
-all: extrToCNFOCaml 
-
+#all: extrToCNFOCaml 
+all: extrToCNFFSharp
 
 ver: $(VERFILES)
 	$(FSTAR) --z3timeout 100 --explicit_deps $(LIB_FILES) $^
-
+ 
 
 ver1: $(VERFILES)
 	$(FSTAR) --explicit_deps $(LIB_FILES) $^
 
 ver2: $(VERFILES)
-	$(FSTAR) --print_fuels --z3timeout 10 --initial_fuel 8 --initial_ifuel 8 --max_fuel 64 --max_ifuel 16 --explicit_deps $(LIB_FILES) $^
+	$(FSTAR) --print_fuels  --z3timeout 10 --initial_fuel 8 --initial_ifuel 8 --max_fuel 64 --max_ifuel 16 --explicit_deps $(LIB_FILES) $^
 
 
 extrToCNFOCaml: $(VERFILES)
 	$(MAKE) -C $(ULIB_ML)
-	#$(FSTAR) --explicit_deps --odir out --codegen OCaml $(LIB_FILES) $^
 	$(FSTAR) $(FSTAR_DEFAULT_ARGS) --odir out --codegen OCaml $^
-	#cp $(LIB)/ml/MkPrims.ml $(LIB)/ml/prims.ml $(LIB)/ml/FStar_IO.ml $(LIB)/ml/FStar_All.ml out
-	#(cd out; ocamlc -o ToCNF.exe nums.cma MkPrims.ml prims.ml FStar_IO.ml FStar_All.ml FStar_List_Tot.ml IL.ml Yard_Core_Conversions_Helpers.ml Yard_Core_Conversions_DeleteEpsRule.ml Printer.ml Main.ml)
-	#(cd out; ocamlc -o ToCNF.exe nums.cma MkPrims.ml Big_int_Z.ml prims.ml IL.ml Yard_Core_Conversions_Helpers.ml)
 	(cd out; $(OCAMLOPT) FStar_List_Tot.ml IL.ml Yard_Core_Conversions_Helpers.ml Printer.ml Yard_Core_Conversions_DeleteStartSymbol.ml Main.ml -o ToCNF.exe)
 	./out/ToCNF.exe
 
 
-
-FS_LIBS = $(FSTAR_HOME)/bin/FSharp.PowerPack.dll
-
 ifeq ($(OS),Windows_NT)
-FSC     = fsc --mlcompatibility -r $(FSTAR_HOME)/bin/FSharp.PowerPack.dll
+FSC     = fsc --mlcompatibility $(addprefix -r , $(FS_LIBS))
 else
-FSC     = fsharpc --mlcompatibility -r $(FSTAR_HOME)/bin/FSharp.PowerPack.dll
+FSC     = fsharpc --mlcompatibility $(addprefix -r , $(FS_LIBS))
 endif
 
-# Fail
-#extrToCNFFSharp: $(VERFILES)
-#	$(FSTAR) --odir out --codegen FSharp $(LIB_FILES) $^
-#	cp $(LIB)/fs/prims.fs $(LIB)/fs/io.fs $(LIB)/fs/all.fs out
-#	(cd out; $(FSC) -o ToCNF.exe prims.fs io.fs all.fs FStar.List.Tot.fs IL.fs Yard.Core.Conversions.Helpers.fs Yard.Core.Conversions.DeleteChainRule.fs Main.fs)
-#	./out/ToCNF.exe
+ifeq ($(OS),Windows_NT)
+FSRUNTIME =
+else
+FSRUNTIME = mono
+endif
 
+FS_LIBS=$(BIN)/FSharp.PowerPack.dll
 
-#add_stdlib_prefix = $(addprefix $(FSTAR_HOME)/ulib/,$(1))
-#STDLIB = $(call add_stdlib_prefix, $(LIB_FILES))
-#STDLIB = $(LIB_FILES)
+extrToCNFFSharp: $(VERFILES)
+	#$(FSTAR) $(FSTAR_DEFAULT_ARGS) --odir out --codegen FSharp $^
+	#cp $(FS_LIBS) out
+	(cd out; $(FSC) --nowarn:0086 --nowarn:0025 $(LIB)/fs/all.fs $(LIB)/fs/prims.fs $(LIB)/fs/io.fs FStar.List.Tot.fs IL.fs Yard.Core.Conversions.Helpers.fs Printer.fs Yard.Core.Conversions.DeleteStartSymbol.fs Main.fs -o ToCNF.exe)
+	$(FSRUNTIME) ./out/ToCNF.exe

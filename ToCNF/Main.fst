@@ -41,7 +41,7 @@ module Main
         print_string "Hello, universes!\n\n" ;
 
         print_string ("\n" ^ Printer.printListRule (Helpers.lift testForDeleteStartSymbol) ^ "\n");
-        print_string ("\n" ^ Printer.printListRule (Helpers.lift (DeleteStartSymbol.deleteStartSymbol testForDeleteStartSymbol)) ^ "\n");
+        //print_string ("\n" ^ Printer.printListRule (Helpers.lift (DeleteStartSymbol.deleteStartSymbol testForDeleteStartSymbol)) ^ "\n");
 
         print_string ""
 
